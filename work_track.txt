@@ -1,0 +1,4 @@
+30_oct_2025 (3 ore)
+	- Meeting initial
+	- Inspectare proiecte
+	- Instalare pachete initiale (FastAPI, Uvicorn)
