@@ -18,4 +18,6 @@ Thumbs.db
 
 # Migrations cache (optional)
 alembic/__pycache__/
+
+# Other files
 work_track.txt
