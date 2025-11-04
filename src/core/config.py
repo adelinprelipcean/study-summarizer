@@ -1,3 +1,10 @@
+"""
+Application settings module.
+
+Loads environment variables from the .env file and provides configuration
+values based on the current environment (e.g., development, production).
+"""
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import SecretStr, AnyUrl
 
