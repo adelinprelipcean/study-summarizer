@@ -1,3 +1,10 @@
+"""
+Pydantic schemas for the Document resource.
+
+Defines request and response data models for the Document API layer, ensuring
+data validation and serialization between the API and internal application logic.
+"""
+
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
