@@ -6,13 +6,16 @@ Defines the "Document" model that will be translated into a DB table.
 
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, sql
 from src.core.db.database import Base
-from datetime import datetime
+import datetime
 
 class Document(Base):
     __tablename__ = "documents"
     id = Column(Integer, primary_key=True, index=True)
+    public_id = Column(String(255), nullable=False, unique=True)
     filename = Column(String(255), nullable=False)
-    content = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    filetype = Column(String(255), nullable=False)
+    uploaded_at = Column(DateTime(timezone=True), default=sql.func.now())
+    status = Column(String(255), nullable=False)
+    
