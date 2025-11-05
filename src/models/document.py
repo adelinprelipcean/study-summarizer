@@ -8,7 +8,6 @@ Defines the "Document" model that will be translated into a DB table.
 
 from sqlalchemy import Column, Integer, String, DateTime, sql
 from src.core.db.database import Base
-import datetime
 
 class Document(Base):
     __tablename__ = "documents"
