@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from src.core.config import settings
 from src.core.db.database import Base, engine
 from src.models.document import Document
+from src.api.routers.document_router import router as document_router
 
 app = FastAPI()
 
@@ -9,3 +10,5 @@ app = FastAPI()
 def read_root():
     Base.metadata.create_all(bind=engine)
     return {"status":"DB initialized"}
+
+app.include_router(document_router, prefix="/api/documents", tags=["Documents"])

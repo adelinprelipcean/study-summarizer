@@ -30,3 +30,7 @@ class DocumentsListOut(BaseModel):
     
 class MessageOut(BaseModel):
     message: str
+    
+
+class DocumentStatusUpdate(BaseModel):
+    status: str

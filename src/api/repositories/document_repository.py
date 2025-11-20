@@ -38,3 +38,12 @@ def delete_document(db: Session, public_id: str) -> bool:
         return True
     else:
         return False
+    
+def update_document_status(db: Session, public_id: str, status: str):
+    doc = db.query(Document).filter(Document.public_id == public_id).first()
+    if not doc:
+        return None
+    doc.status = status
+    db.commit()
+    db.refresh(doc)
+    return doc
