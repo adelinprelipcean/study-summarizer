@@ -1,3 +1,11 @@
+"""
+Service layer for Document operations.
+
+Implements application logic such as generating IDs, validating document
+existence, and orchestrating actions between API routes and the repository.
+Contains no database queries—delegates all persistence actions to the repository.
+"""
+
 from sqlalchemy.orm import Session
 from src.api.repositories.document_repository import (
     create_document,
@@ -11,16 +19,18 @@ from src.api.schemas.document_schemas import DocumentCreate, DocumentsListOut
 from src.models.document import Document
 
 
-def create_document_service(db: Session, data: DocumentCreate):
+def create_document_service(db: Session, data: DocumentCreate, owner_id: int):
     count = db.query(Document).count()
     public_id = f"D{count + 1}"
+    
     return create_document(
         db=db,
         public_id=public_id,
         status="pending",
         title=data.title,
         filetype=data.filetype,
-        filename=data.filename
+        filename=data.filename,
+        owner_id=owner_id
     )
     
     
@@ -28,8 +38,8 @@ def get_document_service(db: Session, public_id: str):
     return get_document_by_public_id(db, public_id)
 
 
-def get_all_documents_service(db: Session):
-    docs = get_all_documents(db)
+def get_all_documents_service(db: Session, owner_id: int):
+    docs = get_all_documents(db, owner_id=owner_id)
     return DocumentsListOut(documents=docs)
         
 

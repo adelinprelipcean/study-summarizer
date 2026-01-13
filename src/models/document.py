@@ -8,11 +8,18 @@ Defines the "Document" model that will be translated into a DB table.
 
 from sqlalchemy import Column, Integer, String, DateTime, sql
 from src.core.db.database import Base
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 
 class Document(Base):
     __tablename__ = "documents"
+    
     id = Column(Integer, primary_key=True, index=True)
-    public_id = Column(String(255), nullable=False, unique=True) 
+    public_id = Column(String(255), nullable=False, unique=True)
+    
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    owner = relationship("User", back_populates="documents") 
+    
     title = Column(String(255), nullable=False)
     filename = Column(String(255), nullable=False)
     filetype = Column(String(255), nullable=False)
