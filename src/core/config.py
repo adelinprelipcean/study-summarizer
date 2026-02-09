@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     ENV: str = "dev"
     DATABASE_URL: str
     JWT_SECRET: SecretStr
-    OPENAI_API_KEY: SecretStr | None = None
+    GEMINI_API_KEY: SecretStr | None = None
 
 
 settings = Settings()

@@ -4,7 +4,7 @@ Security utilities module
 
 from datetime import datetime, timedelta, timezone
 from typing import Union, Any
-from jose import jwt, JWTError
+from jose import jwt
 from passlib.context import CryptContext
 from src.core.config import settings
 
