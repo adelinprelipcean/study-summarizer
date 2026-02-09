@@ -5,7 +5,9 @@ Implements application logic such as generating IDs, validating document
 existence, and orchestrating actions between API routes and the repository.
 Contains no database queries—delegates all persistence actions to the repository.
 """
-
+import shutil
+import os
+from fastapi import UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from src.api.repositories.document_repository import (
     create_document,
@@ -14,24 +16,38 @@ from src.api.repositories.document_repository import (
     delete_document,
     update_document_status
 )
-import uuid
 from src.api.schemas.document_schemas import DocumentCreate, DocumentsListOut
 from src.models.document import Document
 
+UPLOAD_DIR = "uploads"
 
-def create_document_service(db: Session, data: DocumentCreate, owner_id: int):
+def create_document_service(db: Session, file: UploadFile, title: str, owner_id: int):
     count = db.query(Document).count()
     public_id = f"D{count + 1}"
     
-    return create_document(
-        db=db,
-        public_id=public_id,
-        status="pending",
-        title=data.title,
-        filetype=data.filetype,
-        filename=data.filename,
-        owner_id=owner_id
-    )
+    try:
+        doc = create_document(
+            db=db,
+            public_id=public_id,
+            status="uploaded",
+            title=title,
+            filetype="pdf",
+            filename=file.filename,
+            owner_id=owner_id
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    
+    save_path = os.path.join(UPLOAD_DIR, f"{public_id}.pdf")
+    
+    try:
+        with open(save_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        delete_document(db, doc.id)
+        raise HTTPException(status_code=500, detail=f"Could not save file to disk: {str(e)}")
+    
+    return doc
     
     
 def get_document_service(db: Session, public_id: str):

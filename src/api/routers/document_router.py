@@ -5,8 +5,9 @@ Exposes the HTTP routes for creating, retrieving, updating, and deleting
 documents. Validates request payloads using Pydantic schemas and delegates
 business operations to the service layer.
 """
-
-from fastapi import APIRouter, Depends, HTTPException
+import shutil
+import os
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from src.core.db.database import get_db
@@ -29,14 +30,25 @@ from src.models.user import User
 
 router = APIRouter()
 
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 @router.post("/", response_model=DocumentOut)
 def create_document_endpoint(
-    data: DocumentCreate,
+    file: UploadFile = File(...),
+    title: str = Form(),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Acum apelam serviciul si ii dam si ID-ul userului logat
-    return create_document_service(db=db, data=data, owner_id=current_user.id)
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="Only PDF files allowed.")
+    
+    return create_document_service(
+        db=db,
+        file=file,
+        title=title,
+        owner_id=current_user.id
+    )
 
 @router.get("/", response_model=DocumentsListOut)
 def get_all_documents_endpoint(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
