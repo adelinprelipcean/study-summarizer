@@ -15,3 +15,4 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_admin = Column(Boolean, default=False)
     documents = relationship("Document", back_populates="owner")
+    groups = relationship("Group", secondary="user_group_association", back_populates="members")

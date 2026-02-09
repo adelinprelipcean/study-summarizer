@@ -28,12 +28,20 @@ from src.api.dependencies import get_current_user
 from src.models.user import User
 from src.utils.pdf_utils import extract_text_from_pdf
 from src.api.services.ai_service import generate_summary
-from src.api.repositories.document_repository import get_document_by_public_id
+from src.api.repositories.document_repository import (
+    get_document_by_public_id,
+    share_document_with_group
+)
+from src.api.repositories.group_repository import (
+    get_group_by_id,
+    is_user_member_of_group
+)
 
 router = APIRouter()
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 
 @router.post("/", response_model=DocumentOut)
 def create_document_endpoint(
@@ -52,10 +60,12 @@ def create_document_endpoint(
         owner_id=current_user.id
     )
 
+
 @router.get("/", response_model=DocumentsListOut)
 def get_all_documents_endpoint(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     
     return get_all_documents_service(db=db, owner_id=current_user.id)
+
 
 @router.get("/{public_id}", response_model=DocumentOut)
 def get_document_endpoint(public_id: str, db: Session = Depends(get_db)):
@@ -67,6 +77,7 @@ def get_document_endpoint(public_id: str, db: Session = Depends(get_db)):
     
     return doc
 
+
 @router.delete("/{public_id}", response_model=MessageOut)
 def delete_document_endpoint(public_id: str, db: Session = Depends(get_db)):
     
@@ -76,6 +87,7 @@ def delete_document_endpoint(public_id: str, db: Session = Depends(get_db)):
         return {"message" : "Document not found"}
     
     return {"message" : "Document deleted"}
+
 
 @router.put("/{public_id}/status", response_model=DocumentOut)
 def update_document_status_endpoint(public_id: str, data: DocumentStatusUpdate, db: Session = Depends(get_db)):
@@ -87,6 +99,7 @@ def update_document_status_endpoint(public_id: str, data: DocumentStatusUpdate, 
     
     return updated
 
+
 @router.post("/{public_id}/summarize")
 def summarize_document(
     public_id: str,
@@ -94,7 +107,7 @@ def summarize_document(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    print(f"--- START REQUEST pentru {public_id} ---")
+    print(f"--- START REQUEST for {public_id} ---")
     
     doc = get_document_by_public_id(db, public_id)
     if not doc:
@@ -119,3 +132,29 @@ def summarize_document(
         raise HTTPException(status_code=500, detail=f"AI Error: {str(e)}")
     
     return {"public_id": public_id, "summary": summary}
+
+
+@router.post("/{public_id}/share/{group_id}", status_code=status.HTTP_200_OK)
+def share_document(
+    public_id: str,
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    doc = get_document_by_public_id(db, public_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if doc.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can't share a document that doesn't belong to you")
+
+    group = get_group_by_id(db, group_id)
+    if not group:
+         raise HTTPException(status_code=404, detail="Group not found")
+
+    if not is_user_member_of_group(db, current_user.id, group_id) and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="You are not a member of this group")
+
+    share_document_with_group(db, public_id, group_id)
+
+    return {"message": f"The document '{doc.title}' has been shared with the group '{group.name}'"}

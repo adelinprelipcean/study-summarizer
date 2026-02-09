@@ -6,10 +6,9 @@ Defines the "Document" model that will be translated into a DB table.
 
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, sql
-from src.core.db.database import Base
-from sqlalchemy import ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, sql, ForeignKey
 from sqlalchemy.orm import relationship
+from src.core.db.database import Base
 
 class Document(Base):
     __tablename__ = "documents"
@@ -19,6 +18,9 @@ class Document(Base):
     
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     owner = relationship("User", back_populates="documents") 
+    
+    group_id = Column(Integer, ForeignKey("groups.id"), nullable=True)
+    group = relationship("Group", back_populates="shared_documents")
     
     title = Column(String(255), nullable=False)
     filename = Column(String(255), nullable=False)

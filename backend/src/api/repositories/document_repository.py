@@ -51,3 +51,16 @@ def update_document_status(db: Session, public_id: str, status: str):
 
 def get_all_documents_admin(db: Session) -> list[Document]:
     return db.query(Document).order_by(Document.uploaded_at.desc()).all()
+
+def share_document_with_group(db: Session, public_id: str, group_id: int):
+    doc = db.query(Document).filter(Document.public_id == public_id).first()
+    if not doc:
+        return None
+    
+    doc.group_id = group_id
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+def get_documents_by_group(db: Session, group_id: int):
+    return db.query(Document).filter(Document.group_id == group_id).all()

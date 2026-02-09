@@ -1,0 +1,76 @@
+30_oct_2025 (2h)
+	- Meeting initial
+	- Inspectare proiecte
+	- Instalare pachete initiale (FastAPI, Uvicorn)
+
+31_oct_2025 (2h)
+	- Configurare proiect FastAPI + structură backend (src/)
+	- Setup variabile de mediu (.env + .env.example) și sistem de configurare (config.py)
+	- Instalare și configurare pachete esențiale (FastAPI, Uvicorn, Pydantic)
+	- Publicare inițială pe GitHub + actualizare .gitignore
+
+03_noi_2025 (1.5h)
+	- Configurat PostgreSQL în Docker cu volum persistent
+	- Actualizat .env cu URL corect pentru PostgreSQL
+	- Început configurarea fișierului database.py (engine și setup conexiune)
+
+04_noi_2025 (2.5h)
+	- Implementare model Document + SQLAlchemy
+	- Creare tabel în PostgreSQL prin FastAPI (Docker)
+	- Debugging importuri și structură proiect
+
+05_noi_2025 (3h)
+	- Testare completă Document Repository (CRUD) cu PostgreSQL
+	- Ajustări temporare pentru public_id + crearea testelor de validare
+	- Refactorizare repository pentru respectarea arhitecturii (logică mutată din repo)
+	- Pregătire pentru implementarea Service Layer (următorul pas)
+
+13_noi_2025 (3h)
+    - Recapitulare completă a arhitecturii backend (Router → Service → Repository → Model → DB)
+    - Creare layer Service pentru logica Document
+    - Implementare layer Router și integrare cu Pydantic schemas
+    - Conectare corectă între toate straturile (sessions, dependencies, schemas)
+    - Testare manuală repository (create, list, get, delete)
+    - Debugging și clarificare flux validare + logică + acces DB
+
+20_noi_2025 (3h)
+    - Implementate toate endpoint-urile pentru Documents (GET, POST, GET by public_id, DELETE, PUT-status)
+    - Creat și conectat schema Pydantic pentru update status (DocumentStatusUpdate)
+    - Extins layer-ul de service cu funcții pentru listare, căutare, ștergere și update status
+    - Implementat router complet pentru /api/documents cu prefix și tags corecte
+    - Testat toate endpoint-urile în Swagger (inclusiv validare Pydantic și răspunsuri structurate)
+    - Corectat bug-uri legate de ordine argumente + conectarea endpointurilor
+    - Confirmat funcționalitatea completă a CRUD-ului
+
+10_dec_2025 (2.5h)
+    - Research: Studiu comparativ metode autentificare (Session-based vs JWT) pentru arhitecturi microservices
+    - Analiză biblioteci Python pentru securitate (Passlib vs Bcrypt)
+
+18_dec_2025 (2h)
+    - Arhitectură: Proiectare schemă bază de date extinsă (ER Diagram update)
+    - Planificare relații SQL One-to-Many între Users și Documents
+    - Documentare strategie Dependency Injection în FastAPI pentru protecția rutelor
+
+05_ian_2026 (3h)
+    - Research: Best practices pentru stocarea securizată a parolelor (Hashing strategies)
+    - Pregătire mediu de dezvoltare pentru implementarea modulului de Auth
+    - Structurare logică pentru separarea Auth Service de User Repository
+
+13_ian_2026 (5h)
+    - Implementare completă modul Autentificare & Securitate (JWT Stateless)
+    - Configurare utilitare criptografice: Hashing parole (Bcrypt), Generare/Validare Token
+    - Implementare User Management: Schema Pydantic, Repository, Service, Router (Register/Login)
+    - Refactorizare Database: Actualizare modele ORM pentru relația User-Document (Foreign Keys)
+    - Securizare API: Implementare middleware 'get_current_user' (Dependency Injection) pentru protecția rutelor de upload
+    - Testare integrală flux Auth + Upload în Swagger UI
+	- Implementare RBAC (Role-Based Access Control): Adăugare rol de Admin și endpoint-uri dedicate
+    - Dezvoltare Admin Panel API: Rută specială pentru vizualizarea globală a documentelor
+    - Securizare (IDOR Protection): Restricționarea accesului la documente per owner_id
+    - Refactorizare Repository: Filtrarea automată a listelor de documente în funcție de utilizatorul logat
+
+09_feb_2026 (2h)
+    - Reluare dezvoltare & Implementare File Storage
+    - Configurare mediu de dezvoltare după pauza de sesiune
+    - Refactorizare endpoint Upload: Trecere de la JSON body la Multipart/Form-Data
+    - Implementare logică de salvare fizică a fișierelor pe disc (Local Storage)
+    - Validare tip fișier (doar PDF) și generare nume unic bazat pe ID
