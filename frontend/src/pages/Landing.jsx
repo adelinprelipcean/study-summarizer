@@ -75,8 +75,7 @@ function Landing() {
                      bg-samurai-gold/10 dark:bg-[rgba(212,182,111,0.1)] 
                      text-samurai-gold hover:bg-samurai-gold hover:text-white dark:hover:text-black shadow-lg"
         >
-          <Upload size={18} className="stroke-[2px]" />
-          UPLOAD DOCUMENT
+          START YOUR JOURNEY →
         </button>
       </motion.div>
     </div>

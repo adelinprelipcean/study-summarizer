@@ -7,7 +7,8 @@ business operations to the service layer.
 """
 import shutil
 import os
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 from src.core.db.database import get_db
 from src.api.schemas.document_schemas import (
@@ -22,9 +23,10 @@ from src.api.services.document_services import (
     get_all_documents_service,
     get_document_service,
     delete_document_service,
-    update_document_status_service
+    update_document_status_service,
+    check_and_update_guest_limit
 )
-from src.api.dependencies import get_current_user
+from src.api.dependencies import get_current_user, get_optional_current_user
 from src.models.user import User
 from src.utils.pdf_utils import extract_text_from_pdf
 from src.api.services.ai_service import generate_summary
@@ -48,11 +50,27 @@ def create_document_endpoint(
     file: UploadFile = File(...),
     title: str = Form(),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_optional_current_user) 
 ):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Only PDF files allowed.")
     
+    if current_user is None:
+        now = datetime.now(timezone.utc)
+        public_id = f"guest-{int(now.timestamp())}"
+        save_path = os.path.join(UPLOAD_DIR, f"{public_id}.pdf")
+        
+        with open(save_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        return {
+            "public_id": public_id,
+            "title": title,
+            "filetype": "pdf",
+            "status": "temporary",
+            "uploaded_at": now
+        }
+
     return create_document_service(
         db=db,
         file=file,
@@ -103,21 +121,32 @@ def update_document_status_endpoint(public_id: str, data: DocumentStatusUpdate, 
 @router.post("/{public_id}/summarize")
 def summarize_document(
     public_id: str,
+    request: Request,
     summary_type: str = "concise",
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_optional_current_user)
 ):
-    print(f"--- START REQUEST for {public_id} ---")
-    
-    doc = get_document_by_public_id(db, public_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-        
-    if doc.owner_id != current_user.id and not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="Not authorized")
-        
     file_path = os.path.join(UPLOAD_DIR, f"{public_id}.pdf")
-    
+    doc = None
+
+    if current_user is None:
+        identifier = request.client.host
+        is_allowed, message = check_and_update_guest_limit(db, identifier)
+        
+        if not is_allowed:
+            raise HTTPException(status_code=403, detail=message)
+        
+    else:
+        doc = get_document_by_public_id(db, public_id)
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found in your archive")
+            
+        if doc.owner_id != current_user.id and not current_user.is_admin:
+            raise HTTPException(status_code=403, detail="Not authorized to access this scroll")
+
+        if doc.summary:
+            return {"public_id": public_id, "summary": doc.summary}
+
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Physical file not found on server")
         
@@ -128,10 +157,57 @@ def summarize_document(
 
     try:
         summary = generate_summary(text_content, summary_type)
+        
+        if doc:
+            doc.summary = summary
+            db.commit()
+            db.refresh(doc)
+            
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI Error: {str(e)}")
     
     return {"public_id": public_id, "summary": summary}
+
+@router.patch("/{public_id}/rename", response_model=DocumentOut)
+def rename_document_endpoint(
+    public_id: str, 
+    new_title: str = Form(...), 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_optional_current_user) 
+):
+    if current_user is None:
+        return {
+            "public_id": public_id,
+            "title": new_title,
+            "filetype": "pdf",
+            "status": "temporary",
+            "uploaded_at": datetime.now(timezone.utc)
+        }
+
+    doc = get_document_by_public_id(db, public_id)
+    if not doc or doc.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to rename this scroll")
+    
+    doc.title = new_title
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+@router.delete("/{public_id}", response_model=MessageOut)
+def delete_document_endpoint(
+    public_id: str, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_optional_current_user)
+):
+    if current_user is None:
+        return {"message": "Temporary scroll removed"}
+
+    doc = get_document_by_public_id(db, public_id)
+    if not doc or doc.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to destroy this scroll")
+    
+    deleted = delete_document_service(db=db, public_id=public_id)
+    return {"message": "Document deleted"}
 
 
 @router.post("/{public_id}/share/{group_id}", status_code=status.HTTP_200_OK)

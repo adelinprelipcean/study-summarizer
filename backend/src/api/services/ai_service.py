@@ -33,7 +33,7 @@ def generate_summary(text: str, summary_type: str = "concise") -> str:
     
     try:
         response = client.models.generate_content(
-            model='gemini-2.5-flash-lite',
+            model='gemini-2.5-flash',
             contents=full_prompt
             )
         return response.text

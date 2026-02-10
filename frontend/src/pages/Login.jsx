@@ -78,12 +78,25 @@ const Login = () => {
             </button>
           </form>
 
-          <p className="mt-10 text-center text-gray-500 text-xs font-medium uppercase tracking-widest">
+          <p className="mt-8 text-center text-gray-400 text-xs font-medium uppercase tracking-widest">
             New aspirant?{" "}
-            <Link to="/register" className="text-samurai-gold hover:underline">
+            <Link
+              to="/register"
+              className="text-black dark:text-samurai-gold  hover:underline"
+            >
               Register here
             </Link>
           </p>
+
+          {/* BUTON BACK */}
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="text-black dark:text-samurai-gold hover:scale-[1.05] text-[16px] font-bold uppercase tracking-[0.2em] flex items-center gap-1 transition-all group"
+            >
+              Go Back
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>

@@ -6,7 +6,7 @@ Defines the "Document" model that will be translated into a DB table.
 
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, sql, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, sql, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from src.core.db.database import Base
 
@@ -27,4 +27,6 @@ class Document(Base):
     filetype = Column(String(255), nullable=False)
     uploaded_at = Column(DateTime(timezone=True), default=sql.func.now())
     status = Column(String(255), nullable=False)
+    
+    summary = Column(Text, nullable=True)
     

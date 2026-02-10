@@ -74,3 +74,9 @@
     - Refactorizare endpoint Upload: Trecere de la JSON body la Multipart/Form-Data
     - Implementare logică de salvare fizică a fișierelor pe disc (Local Storage)
     - Validare tip fișier (doar PDF) și generare nume unic bazat pe ID
+    - Frontend Initialization & Setup
+    - Arhitectură și Navigare: Implementat sistemul de rute (App.jsx) pentru paginile Landing, Login, Register și Dashboard.
+    - UI/UX Design (Premium Samurai Aesthetic): Creat o identitate vizuală bazată pe Glassmorphism, culori personalizate (samurai-gold) și suport nativ pentru Dark Mode.
+    - Dashboard & Funcționalități Guest: Implementat dashboard-ul "The Archive" cu sidebar retractabil și logică de monitorizare a consumului pentru vizitatori (limita de 2 summarizări/zi salvată în localStorage).
+    - Optimizare Responsive
+    - Refactorizare & Debugging

@@ -7,6 +7,8 @@ Contains no database queries—delegates all persistence actions to the reposito
 """
 import shutil
 import os
+from datetime import datetime, timedelta
+from src.models.guest_usage import GuestUsage
 from fastapi import UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from src.api.repositories.document_repository import (
@@ -18,6 +20,7 @@ from src.api.repositories.document_repository import (
 )
 from src.api.schemas.document_schemas import DocumentCreate, DocumentsListOut
 from src.models.document import Document
+from src.models.guest_usage import GuestUsage
 
 UPLOAD_DIR = "uploads"
 
@@ -65,3 +68,26 @@ def delete_document_service(db: Session, public_id: str):
 
 def update_document_status_service(db: Session, public_id: str, status: str):
     return update_document_status(db=db, public_id=public_id, status=status)
+
+def check_and_update_guest_limit(db: Session, identifier: str):
+    usage = db.query(GuestUsage).filter(GuestUsage.identifier == identifier).first()
+    now = datetime.utcnow()
+
+    if not usage:
+        usage = GuestUsage(identifier=identifier, count=1, last_reset=now)
+        db.add(usage)
+        db.commit()
+        return True, "Success"
+
+    if now - usage.last_reset > timedelta(days=1):
+        usage.count = 1
+        usage.last_reset = now
+        db.commit()
+        return True, "Limit reset after 24h"
+
+    if usage.count >= 10:
+        return False, "Energy depleted. Wait 24h or Register to save your scrolls."
+
+    usage.count += 1
+    db.commit()
+    return True, "Success"

@@ -21,12 +21,10 @@ const ThemeToggle = () => {
   return (
     <button
       onClick={toggleTheme}
-      className="p-3 rounded-2xl bg-white/10 dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 text-gray-800 dark:text-samurai-gold shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 
-                 md:relative md:inset-auto
-                 fixed bottom-6 right-6 z-50"
-      aria-label="Toggle Theme"
+      className="p-3 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 
+               text-gray-800 dark:text-samurai-gold hover:scale-105 active:scale-95 transition-all"
     >
-      {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+      {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
     </button>
   );
 };

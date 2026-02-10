@@ -4,7 +4,7 @@ Pydantic schemas for the Document resource.
 Defines request and response data models for the Document API layer, ensuring
 data validation and serialization between the API and internal application logic.
 """
-
+from typing import Optional
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
@@ -22,6 +22,7 @@ class DocumentOut(BaseModel):
     filetype: str
     status: str
     uploaded_at: datetime
+    summary: Optional[str] = None
     
     
 class DocumentsListOut(BaseModel):
