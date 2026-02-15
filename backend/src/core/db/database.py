@@ -3,7 +3,7 @@
 Database configuration module
 
 Initializes the database engine that establishes the connection to the 
-DB andthe database session through the DB communicates with the API.
+DB and the database session through the DB communicates with the API.
 It also defines the Base class from which all ORM models will inherit.
     
 """

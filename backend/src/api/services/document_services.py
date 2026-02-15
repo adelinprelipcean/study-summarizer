@@ -7,7 +7,7 @@ Contains no database queries—delegates all persistence actions to the reposito
 """
 import shutil
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from src.models.guest_usage import GuestUsage
 from fastapi import UploadFile, HTTPException
 from sqlalchemy.orm import Session
@@ -21,8 +21,7 @@ from src.api.repositories.document_repository import (
 from src.api.schemas.document_schemas import DocumentCreate, DocumentsListOut
 from src.models.document import Document
 from src.models.guest_usage import GuestUsage
-
-UPLOAD_DIR = "uploads"
+from src.core.config import settings
 
 def create_document_service(db: Session, file: UploadFile, title: str, owner_id: int):
     count = db.query(Document).count()
@@ -41,7 +40,7 @@ def create_document_service(db: Session, file: UploadFile, title: str, owner_id:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     
-    save_path = os.path.join(UPLOAD_DIR, f"{public_id}.pdf")
+    save_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.pdf")
     
     try:
         with open(save_path, "wb") as buffer:
@@ -71,7 +70,7 @@ def update_document_status_service(db: Session, public_id: str, status: str):
 
 def check_and_update_guest_limit(db: Session, identifier: str):
     usage = db.query(GuestUsage).filter(GuestUsage.identifier == identifier).first()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     if not usage:
         usage = GuestUsage(identifier=identifier, count=1, last_reset=now)

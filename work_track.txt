@@ -80,3 +80,16 @@
     - Dashboard & Funcționalități Guest: Implementat dashboard-ul "The Archive" cu sidebar retractabil și logică de monitorizare a consumului pentru vizitatori (limita de 2 summarizări/zi salvată în localStorage).
     - Optimizare Responsive
     - Refactorizare & Debugging
+
+10_feb_2026 (7h)
+	- Full-Stack Integration: Finalizat fluxul complet Frontend-Backend (Upload -> AI Processing -> Database Storage -> UI Render).
+	- Frontend Logic (React): Implementat 'Summon AI Insight' cu state management dinamic (actualizare interfață fără refresh după generare).
+	- Backend Persistence: Implementat salvarea permanentă a rezumatelor în PostgreSQL (evitare costuri repetitive AI).
+	- Database & Docker Architecture: Stabilizat containerul de baze de date (rezolvat crash loops, volume persistence, port conflicts 5432->5435).
+	- API & Data Integrity: Actualizat schema Pydantic (DocumentOut) și sincronizat modelele SQLAlchemy pentru consistența datelor.
+	- UX/UI Polish: Rezolvat randarea condițională a butoanelor și formatarea textului (CSS break-words) pentru titluri lungi.
+	- Debugging Complex: Rezolvat conflicte de drivere (psycopg2), conexiuni Docker și erori de CORS/Network.
+
+15_feb_2026 (1.5h)
+    - Code revisions
+    - Config/Security Docs
