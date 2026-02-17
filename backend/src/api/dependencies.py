@@ -9,7 +9,7 @@ from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from src.core.db.database import get_db
 from src.core.config import settings
-from src.core.security import ALGORITHM
+from src.core.config import settings
 from src.api.repositories.user_repository import get_user_by_id
 from src.models.user import User
 
@@ -28,7 +28,7 @@ def get_current_user(
     token_str = token.credentials
     
     try:
-        payload = jwt.decode(token_str, settings.JWT_SECRET.get_secret_value(), algorithms=[ALGORITHM])
+        payload = jwt.decode(token_str, settings.JWT_SECRET.get_secret_value(), algorithms=[settings.ENCODING_ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception
@@ -49,7 +49,7 @@ def get_optional_current_user(
 
     token_str = token.credentials
     try:
-        payload = jwt.decode(token_str, settings.JWT_SECRET.get_secret_value(), algorithms=[ALGORITHM])
+        payload = jwt.decode(token_str, settings.JWT_SECRET.get_secret_value(), algorithms=[settings.ENCODING_ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
             return None

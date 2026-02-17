@@ -38,11 +38,11 @@ from src.api.repositories.group_repository import (
     get_group_by_id,
     is_user_member_of_group
 )
+from src.core.config import settings
 
 router = APIRouter()
 
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
 
 @router.post("/", response_model=DocumentOut)
@@ -58,7 +58,7 @@ def create_document_endpoint(
     if current_user is None:
         now = datetime.now(timezone.utc)
         public_id = f"guest-{int(now.timestamp())}"
-        save_path = os.path.join(UPLOAD_DIR, f"{public_id}.pdf")
+        save_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.pdf")
         
         with open(save_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
@@ -126,7 +126,7 @@ def summarize_document(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_optional_current_user)
 ):
-    file_path = os.path.join(UPLOAD_DIR, f"{public_id}.pdf")
+    file_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.pdf")
     doc = None
 
     if current_user is None:
