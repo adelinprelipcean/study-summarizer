@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -195,7 +195,21 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDocuments();
-  }, []);
+
+    if (isGuest) {
+      const syncEnergy = async () => {
+        try {
+          const res = await axios.get(
+            "http://127.0.0.1:8000/api/documents/guest-limit",
+          );
+          setGuestLimit(res.data.usage_count);
+        } catch (err) {
+          console.error("The energy couldn't be synchronized", err);
+        }
+      };
+      syncEnergy();
+    }
+  }, [isGuest]);
 
   return (
     <div className="min-h-screen bg-[#fdfdfd] dark:bg-[#0c0c0d] text-gray-900 dark:text-gray-100 flex transition-colors duration-300 font-sans relative">
@@ -295,7 +309,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Bara de Control: Toggle și Energie grupate jos */}
+            {/* Toggle / Energy */}
             <div className="flex items-center gap-3">
               <ThemeToggle />
 

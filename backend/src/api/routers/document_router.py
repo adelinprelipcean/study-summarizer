@@ -7,7 +7,7 @@ business operations to the service layer.
 """
 import shutil
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 from src.core.db.database import get_db
@@ -38,6 +38,7 @@ from src.api.repositories.group_repository import (
     get_group_by_id,
     is_user_member_of_group
 )
+from src.models.guest_usage import GuestUsage
 from src.core.config import settings
 
 router = APIRouter()
@@ -83,6 +84,29 @@ def create_document_endpoint(
 def get_all_documents_endpoint(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     
     return get_all_documents_service(db=db, owner_id=current_user.id)
+
+
+@router.get("/guest-limit")
+def get_guest_limit_status(
+    request: Request, 
+    db: Session = Depends(get_db)
+):
+    identifier = request.client.host
+    usage = db.query(GuestUsage).filter(GuestUsage.identifier == identifier).first()
+    
+    if not usage:
+        return {"usage_count": 0}
+
+    now = datetime.now(timezone.utc)
+    last_reset = usage.last_reset
+    
+    if last_reset.tzinfo is None:
+        last_reset = last_reset.replace(tzinfo=timezone.utc)
+
+    if now - last_reset > timedelta(days=1):
+        return {"usage_count": 0}
+
+    return {"usage_count": usage.count}
 
 
 @router.get("/{public_id}", response_model=DocumentOut)
@@ -168,6 +192,7 @@ def summarize_document(
     
     return {"public_id": public_id, "summary": summary}
 
+
 @router.patch("/{public_id}/rename", response_model=DocumentOut)
 def rename_document_endpoint(
     public_id: str, 
@@ -192,6 +217,7 @@ def rename_document_endpoint(
     db.commit()
     db.refresh(doc)
     return doc
+
 
 @router.delete("/{public_id}", response_model=MessageOut)
 def delete_document_endpoint(

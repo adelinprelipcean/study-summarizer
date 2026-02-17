@@ -73,19 +73,24 @@ def check_and_update_guest_limit(db: Session, identifier: str):
     now = datetime.now(timezone.utc)
 
     if not usage:
-        usage = GuestUsage(identifier=identifier, count=1, last_reset=now)
-        db.add(usage)
+        new_usage = GuestUsage(identifier=identifier, count=1, last_reset=now)
+        db.add(new_usage)
         db.commit()
         return True, "Success"
+    
+    last_reset = usage.last_reset
 
-    if now - usage.last_reset > timedelta(days=1):
+    if last_reset.tzinfo is None:
+        last_reset = last_reset.replace(tzinfo=timezone.utc)
+        
+    if now - last_reset > timedelta(days=1):
         usage.count = 1
         usage.last_reset = now
         db.commit()
-        return True, "Limit reset after 24h"
+        return True, "Success"
 
-    if usage.count >= 10:
-        return False, "Energy depleted. Wait 24h or Register to save your scrolls."
+    if usage.count >= 2:
+        return False, "Daily limit reached. Wait 24h or Register to save your scrolls."
 
     usage.count += 1
     db.commit()
