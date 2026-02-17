@@ -67,7 +67,7 @@ const Register = () => {
             <input
               type="text"
               placeholder="USERNAME"
-              className="w-full bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 p-4 rounded-2xl focus:border-samurai-gold outline-none transition-all dark:text-white shadow-inner"
+              className="w-full bg-white text-black dark:bg-black/40 border border-gray-200 dark:border-white/10 p-4 rounded-2xl focus:border-samurai-gold outline-none transition-all dark:text-white shadow-inner"
               onChange={(e) =>
                 setFormData({ ...formData, username: e.target.value })
               }
@@ -75,7 +75,7 @@ const Register = () => {
             <input
               type="email"
               placeholder="EMAIL"
-              className="w-full bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 p-4 rounded-2xl focus:border-samurai-gold outline-none transition-all dark:text-white shadow-inner"
+              className="w-full bg-white text-black dark:bg-black/40 border border-gray-200 dark:border-white/10 p-4 rounded-2xl focus:border-samurai-gold outline-none transition-all dark:text-white shadow-inner"
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
@@ -83,7 +83,7 @@ const Register = () => {
             <input
               type="password"
               placeholder="PASSWORD"
-              className="w-full bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 p-4 rounded-2xl focus:border-samurai-gold outline-none transition-all dark:text-white shadow-inner"
+              className="w-full bg-white text-black dark:bg-black/40 border border-gray-200 dark:border-white/10 p-4 rounded-2xl focus:border-samurai-gold outline-none transition-all dark:text-white shadow-inner"
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
@@ -97,7 +97,7 @@ const Register = () => {
             Already recognized?{" "}
             <Link
               to="/login"
-              className="text-black dark:text-samurai-gold  hover:underline"
+              className="text-gray-900 dark:text-samurai-gold  hover:underline"
             >
               Log In
             </Link>
@@ -107,7 +107,7 @@ const Register = () => {
           <div className="mt-6 flex justify-center">
             <button
               onClick={() => navigate("/dashboard")}
-              className="text-black dark:text-samurai-gold hover:scale-[1.05] text-[16px] font-bold uppercase tracking-[0.2em] flex items-center gap-1 transition-all group"
+              className="text-gray-900 dark:text-samurai-gold hover:scale-[1.05] text-[16px] font-bold uppercase tracking-[0.2em] flex items-center gap-1 transition-all group"
             >
               Go back
             </button>

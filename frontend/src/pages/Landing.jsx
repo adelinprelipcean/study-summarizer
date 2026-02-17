@@ -41,7 +41,7 @@ function Landing() {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="text-4xl md:text-7xl font-bold mb-6 tracking-[0.20em] text-center z-10 uppercase text-gray-800 dark:text-gray-200"
+        className="text-4xl md:text-7xl font-bold mb-6 tracking-[0.20em] text-center z-10 uppercase text-gray-700 dark:text-gray-200"
       >
         Summer<span className="text-samurai-gold">ey-I</span>
       </motion.h1>

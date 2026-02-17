@@ -1,18 +1,15 @@
 """
 API router for Document endpoints.
-
-Exposes the HTTP routes for creating, retrieving, updating, and deleting
-documents. Validates request payloads using Pydantic schemas and delegates
-business operations to the service layer.
 """
 import shutil
 import os
+import uuid
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
+
 from src.core.db.database import get_db
 from src.api.schemas.document_schemas import (
-    DocumentCreate,
     DocumentOut,
     DocumentsListOut,
     MessageOut,
@@ -39,12 +36,12 @@ from src.api.repositories.group_repository import (
     is_user_member_of_group
 )
 from src.models.guest_usage import GuestUsage
+from src.models.group import GroupActivity
 from src.core.config import settings
 
 router = APIRouter()
 
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-
 
 @router.post("/", response_model=DocumentOut)
 def create_document_endpoint(
@@ -58,7 +55,7 @@ def create_document_endpoint(
     
     if current_user is None:
         now = datetime.now(timezone.utc)
-        public_id = f"guest-{int(now.timestamp())}"
+        public_id = f"guest-{uuid.uuid4()}" 
         save_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.pdf")
         
         with open(save_path, "wb") as buffer:
@@ -79,18 +76,12 @@ def create_document_endpoint(
         owner_id=current_user.id
     )
 
-
 @router.get("/", response_model=DocumentsListOut)
 def get_all_documents_endpoint(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    
     return get_all_documents_service(db=db, owner_id=current_user.id)
 
-
 @router.get("/guest-limit")
-def get_guest_limit_status(
-    request: Request, 
-    db: Session = Depends(get_db)
-):
+def get_guest_limit_status(request: Request, db: Session = Depends(get_db)):
     identifier = request.client.host
     usage = db.query(GuestUsage).filter(GuestUsage.identifier == identifier).first()
     
@@ -99,7 +90,6 @@ def get_guest_limit_status(
 
     now = datetime.now(timezone.utc)
     last_reset = usage.last_reset
-    
     if last_reset.tzinfo is None:
         last_reset = last_reset.replace(tzinfo=timezone.utc)
 
@@ -108,39 +98,46 @@ def get_guest_limit_status(
 
     return {"usage_count": usage.count}
 
-
 @router.get("/{public_id}", response_model=DocumentOut)
 def get_document_endpoint(public_id: str, db: Session = Depends(get_db)):
-    
     doc = get_document_service(db=db, public_id=public_id)
-    
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    
     return doc
 
-
 @router.delete("/{public_id}", response_model=MessageOut)
-def delete_document_endpoint(public_id: str, db: Session = Depends(get_db)):
+def delete_document_endpoint(
+    public_id: str, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_optional_current_user)
+):
+    if current_user is None:
+        return {"message": "Temporary scroll removed"}
+
+    doc = get_document_by_public_id(db, public_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+        
+    if doc.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to destroy this scroll")
     
+    db.query(GroupActivity).filter(GroupActivity.document_public_id == public_id).update(
+        {GroupActivity.document_public_id: None}
+    )
+    db.commit()
+
     deleted = delete_document_service(db=db, public_id=public_id)
-    
     if not deleted:
-        return {"message" : "Document not found"}
+        raise HTTPException(status_code=500, detail="The scroll is protected by dark magic (Database error)")
     
     return {"message" : "Document deleted"}
 
-
 @router.put("/{public_id}/status", response_model=DocumentOut)
 def update_document_status_endpoint(public_id: str, data: DocumentStatusUpdate, db: Session = Depends(get_db)):
-    
     updated = update_document_status_service(db=db, public_id=public_id, status=data.status)
-    
     if not updated:
         raise HTTPException(status_code=404, detail="Document not found")
-    
     return updated
-
 
 @router.post("/{public_id}/summarize")
 def summarize_document(
@@ -156,26 +153,27 @@ def summarize_document(
     if current_user is None:
         identifier = request.client.host
         is_allowed, message = check_and_update_guest_limit(db, identifier)
-        
         if not is_allowed:
             raise HTTPException(status_code=403, detail=message)
-        
     else:
         doc = get_document_by_public_id(db, public_id)
-        if not doc:
-            raise HTTPException(status_code=404, detail="Document not found in your archive")
+        if doc:
+            if doc.owner_id != current_user.id:
+                if doc.group_id:
+                     if not is_user_member_of_group(db, current_user.id, doc.group_id):
+                         raise HTTPException(status_code=403, detail="Not authorized to access this scroll")
+                else:
+                     raise HTTPException(status_code=403, detail="Not authorized to access this scroll")
             
-        if doc.owner_id != current_user.id and not current_user.is_admin:
-            raise HTTPException(status_code=403, detail="Not authorized to access this scroll")
-
-        if doc.summary:
-            return {"public_id": public_id, "summary": doc.summary}
+            if doc.summary:
+                return {"public_id": public_id, "summary": doc.summary}
+        else:
+             raise HTTPException(status_code=404, detail="Document not found in archive")
 
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Physical file not found on server")
         
     text_content = extract_text_from_pdf(file_path)
-    
     if not text_content:
         raise HTTPException(status_code=400, detail="Could not extract text from PDF (scanned or empty?)")
 
@@ -191,7 +189,6 @@ def summarize_document(
         raise HTTPException(status_code=500, detail=f"AI Error: {str(e)}")
     
     return {"public_id": public_id, "summary": summary}
-
 
 @router.patch("/{public_id}/rename", response_model=DocumentOut)
 def rename_document_endpoint(
@@ -218,45 +215,41 @@ def rename_document_endpoint(
     db.refresh(doc)
     return doc
 
-
-@router.delete("/{public_id}", response_model=MessageOut)
-def delete_document_endpoint(
-    public_id: str, 
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_optional_current_user)
-):
-    if current_user is None:
-        return {"message": "Temporary scroll removed"}
-
-    doc = get_document_by_public_id(db, public_id)
-    if not doc or doc.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to destroy this scroll")
-    
-    deleted = delete_document_service(db=db, public_id=public_id)
-    return {"message": "Document deleted"}
-
-
-@router.post("/{public_id}/share/{group_id}", status_code=status.HTTP_200_OK)
+@router.post("/{public_id}/share/{group_id}")
 def share_document(
-    public_id: str,
-    group_id: int,
-    db: Session = Depends(get_db),
+    public_id: str, 
+    group_id: int, 
+    db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_user)
 ):
+    # 1. Fetch Doc
     doc = get_document_by_public_id(db, public_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-
+    
+    # 2. Permissions
     if doc.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="You can't share a document that doesn't belong to you")
-
+        raise HTTPException(status_code=403, detail="Not your scroll to share")
+    
     group = get_group_by_id(db, group_id)
     if not group:
          raise HTTPException(status_code=404, detail="Group not found")
 
+    # 3. Check Group Membership
     if not is_user_member_of_group(db, current_user.id, group_id) and not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="You are not a member of this group")
+         raise HTTPException(status_code=403, detail="You are not a member of this War Room")
 
+    # 4. Perform Share (DB Update)
     share_document_with_group(db, public_id, group_id)
-
-    return {"message": f"The document '{doc.title}' has been shared with the group '{group.name}'"}
+    
+    # 5. LOG ACTIVITY
+    new_activity = GroupActivity(
+        group_id=group_id,
+        user_id=current_user.id,
+        document_public_id=public_id,
+        content="shared a summerized scroll"
+    )
+    db.add(new_activity)
+    db.commit()
+    
+    return {"message": f"The document '{doc.title}' has been shared with '{group.name}'"}

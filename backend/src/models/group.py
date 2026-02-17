@@ -34,3 +34,15 @@ class Group(Base):
 
     # Link to documents shared within the group
     shared_documents = relationship("Document", back_populates="group")
+    
+class GroupActivity(Base):
+    __tablename__ = "group_activities"
+    id = Column(Integer, primary_key=True)
+    group_id = Column(Integer, ForeignKey("groups.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    document_public_id = Column(String, ForeignKey("documents.public_id", ondelete="SET NULL"), nullable=True)
+    content = Column(String) # Ex: "a dat share la summarizerul"
+    created_at = Column(DateTime, default=func.now())
+
+    user = relationship("User")
+    document = relationship("Document")

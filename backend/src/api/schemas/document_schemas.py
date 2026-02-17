@@ -23,6 +23,7 @@ class DocumentOut(BaseModel):
     status: str
     uploaded_at: datetime
     summary: Optional[str] = None
+    owner_username: Optional[str] = None
     
     
 class DocumentsListOut(BaseModel):
