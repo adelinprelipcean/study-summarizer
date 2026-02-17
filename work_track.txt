@@ -93,3 +93,11 @@
 15_feb_2026 (1.5h)
     - Code revisions
     - Config/Security Docs
+
+17_feb_2026 (6h)
+    - Feature: Colaborare War Room: Implementat sistemul de share pentru grupuri.
+    - Refactorizare UI/UX: Adoptarea unui stil de grile tactice cu carduri pentru a optimiza densitatea informației.
+    - Securitate & RBAC (Role-Based Access Control): Implementat logica de moderator — doar creatorul grupului are permisiunea de a vizualiza și utiliza butonul "Dismantle Room" (verificare realizată prin compararea ID-ului din token-ul JWT cu created_by_id).
+    - Refactorizare Backend.
+    - Serializare Date: Actualizat schemele Pydantic (ActivityOut) pentru a accepta câmpuri opționale (Optional), prevenind erorile de validare.
+    - Finisare UI.
