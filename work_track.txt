@@ -91,8 +91,8 @@
 	- Debugging Complex: Rezolvat conflicte de drivere (psycopg2), conexiuni Docker și erori de CORS/Network.
 
 15_feb_2026 (1.5h)
-    - Code revisions
-    - Config/Security Docs
+    - Refactorizare cod
+    - Documentare cod Config/Security
 
 17_feb_2026 (6h)
     - Feature: Colaborare War Room: Implementat sistemul de share pentru grupuri.
@@ -101,3 +101,10 @@
     - Refactorizare Backend.
     - Serializare Date: Actualizat schemele Pydantic (ActivityOut) pentru a accepta câmpuri opționale (Optional), prevenind erorile de validare.
     - Finisare UI.
+
+19_feb_2026 (5h)
+	- Feature: Sincronizare Energie & Quota Management: Implementat sistem de monitorizare a consumului (Energy) sincronizat cu backend-ul prin IP-based tracking;
+	- Securitate & Protecție Credite AI: Implementat mecanism de validare a documentului înainte de share; sistemul blochează partajarea scroll-urilor fără sumar generat pentru a preveni risipa de resurse AI.
+	- Grupuri & Collaboration Management: Dezvoltat endpoint de DELETE pentru activitățile din War Room, permițând utilizatorilor să-și retragă documentele partajate (deconectare group_id și ștergere activitate din log).
+	- Frontend Logic & UI Refinement: Adăugat buton de eliminare (Trash icon) vizibil condiționat doar pentru proprietarul documentului și implementat modal de eroare personalizat pentru feedback rapid.
+	- Debugging Full-Stack: Rezolvat erori de serializare
