@@ -86,15 +86,13 @@ The React app will typically be available at http://localhost:5173.
 ## 🧠 What I Learned
 Building this project was a great hands-on experience with full-stack development. Some of the key technical challenges I solved include:
 
-State & Rate Limit Synchronization: Seamlessly syncing local React state with backend DB states to track Guest API limits via IP addresses accurately.
+State & Rate Limit Synchronization: Seamlessly syncing local React state with backend DB states.
 
 API Architecture: Designing a clean RESTful API with FastAPI, properly structuring the Service and Repository layers.
 
 Security & RBAC: Implementing strict Role-Based Access Control (RBAC) to ensure users can only modify or share their own data in collaborative environments.
 
-Data Integrity: Handling JavaScript Date and Timezone conversions to ensure logs display correctly regardless of the server's UTC time.
-
-Docker Orchestration: Managing containerized environments, resolving port conflicts, and ensuring persistent database volumes.
+Docker Orchestration: Managing containerized environments and ensuring persistent database volumes.
 
 ## 🎓 Acknowledgments
 
