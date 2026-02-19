@@ -97,7 +97,14 @@ Data Integrity: Handling JavaScript Date and Timezone conversions to ensure logs
 Docker Orchestration: Managing containerized environments, resolving port conflicts, and ensuring persistent database volumes.
 
 ## 🎓 Acknowledgments
-This project was developed as part of the DUAL-USV educational program. The practical implementation and full-stack development phases were carried out at Assist Software, under the guidance and framework of the <ASSIST Academy/>.
+
+<p align="center">
+  <img src="./assets/logo_usv.png" alt="USV Logo" height="70" />
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./assets/logo_assist.png" alt="ASSIST Academy Logo" height="70" />
+</p>
+
+This project was developed as part of the **DUAL-USV** educational program. The practical implementation and full-stack development phases were carried out under the guidance and framework of the **`<ASSIST Academy/>`**.
 
 ## 📄 License
 This is a personal portfolio project.
