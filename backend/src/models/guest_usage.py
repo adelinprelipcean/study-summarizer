@@ -13,5 +13,5 @@ class GuestUsage(Base):
     identifier = Column(String, primary_key=True, index=True)
     count = Column(Integer, default=0)
     
-    # The limit is reseted every 24h
+    # Counter for usage resets
     last_reset = Column(DateTime, default=datetime.now(timezone.utc))

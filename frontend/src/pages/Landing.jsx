@@ -67,13 +67,13 @@ function Landing() {
         transition={{ delay: 0.7 }}
         className="flex flex-col sm:flex-row gap-6 z-10"
       >
-        {/* BUTON DASHBOARD (GUEST MODE) */}
+        {/* BUTON DASHBOARD */}
         <button
           onClick={() => navigate("/dashboard")}
           className="px-10 py-4 rounded-lg font-bold flex items-center justify-center gap-3 transition-all duration-300 hover:-translate-y-1 tracking-wider text-sm border 
                      border-samurai-gold/50 dark:border-samurai-gold/30 
                      bg-samurai-gold/10 dark:bg-[rgba(212,182,111,0.1)] 
-                     text-samurai-gold hover:bg-samurai-gold hover:text-white dark:hover:text-black shadow-lg"
+                     text-samurai-gold hover:text-white dark:hover:bg-samurai-gold hover:bg-samurai-gold shadow-lg"
         >
           START YOUR JOURNEY →
         </button>

@@ -14,7 +14,7 @@ from src.api.repositories.user_repository import get_user_by_id
 from src.api.dependencies import get_current_user
 from src.models.user import User
 from src.api.schemas.document_schemas import DocumentOut
-from src.models.group import GroupActivity
+from src.models.group import GroupActivity, Group
 from src.models.document import Document
 from src.api.schemas.group_schemas import ActivityOut
 
@@ -38,17 +38,17 @@ def invite_to_group(
 ):
     group = get_group_by_id(db, group_id)
     if not group:
-        raise HTTPException(status_code=404, detail="Grupul nu există")
+        raise HTTPException(status_code=404, detail="The group does not exists.")
 
     if group.created_by_id != current_user.id and not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="Doar moderatorul poate invita membri")
+        raise HTTPException(status_code=403, detail="Moderators-only action.")
 
     user_to_add = get_user_by_id(db, user_id)
     if not user_to_add:
-        raise HTTPException(status_code=404, detail="Utilizatorul invitat nu există")
+        raise HTTPException(status_code=404, detail="The invited user does not exists.")
 
     add_user_to_group(db, user_id=user_id, group_id=group_id)
-    return {"message": f"Utilizatorul {user_to_add.username} a fost adăugat în grup"}
+    return {"message": f"The user {user_to_add.username} was added to the group."}
 
 
 @router.get("/me", response_model=list[GroupOut])
@@ -56,7 +56,7 @@ def get_my_groups(
     db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_user)
 ):
-    """Returns the list of groups the current user belongs to."""
+    # Returns the list of groups the current user belongs to.
     return get_user_groups(db, user_id=current_user.id)
 
 
@@ -89,13 +89,14 @@ def get_group_activity(
         db.query(
             GroupActivity.id,
             User.username,
+            User.id.label("user_id"),
             Document.title.label("document_title"),
             GroupActivity.document_public_id,
             GroupActivity.content,
             GroupActivity.created_at
         )
         .join(User, GroupActivity.user_id == User.id)
-        .outerjoin(Document, GroupActivity.document_public_id == Document.public_id)
+        .join(Document, GroupActivity.document_public_id == Document.public_id)
         .filter(GroupActivity.group_id == group_id)
         .order_by(GroupActivity.created_at.desc())
         .all()
@@ -113,12 +114,48 @@ def delete_group(
         raise HTTPException(status_code=404, detail="War Room not found")
 
     if group.created_by_id != current_user.id and not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="Only the moderator can dismantle this room")
+        raise HTTPException(status_code=403, detail="Only the moderator can delete this room")
 
     db.query(GroupActivity).filter(GroupActivity.group_id == group_id).delete()
     
-    # Ștergem grupul
     db.delete(group)
     db.commit()
     
-    return {"message": "War Room dismantled successfully"}
+    return {"message": "War Room deleted successfully"}
+
+@router.post("/join/{access_code}")
+def join_group_by_code(
+    access_code: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    group = db.query(Group).filter(Group.access_code == access_code).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Invalid access code. The War Room does not exist.")
+    
+    if is_user_member_of_group(db, current_user.id, group.id):
+        raise HTTPException(status_code=400, detail="You are already a member of this alliance.")
+    
+    add_user_to_group(db, user_id=current_user.id, group_id=group.id, role="member")
+    
+    return {"message": f"Successfully joined {group.name}", "group_id": group.id}
+
+@router.delete("/activity/{activity_id}", status_code=status.HTTP_200_OK)
+def remove_shared_document(
+    activity_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    activity = db.query(GroupActivity).filter(GroupActivity.id == activity_id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="Share activity not found")
+
+    document = db.query(Document).filter(Document.public_id == activity.document_public_id).first()
+    if not document or document.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only remove your own shared scrolls")
+
+    document.group_id = None
+    db.delete(activity)
+    db.commit()
+    
+    return {"message": "Scroll removed from War Room"}

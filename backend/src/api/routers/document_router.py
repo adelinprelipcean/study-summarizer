@@ -45,6 +45,7 @@ os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
 @router.post("/", response_model=DocumentOut)
 def create_document_endpoint(
+    request: Request,
     file: UploadFile = File(...),
     title: str = Form(),
     db: Session = Depends(get_db),
@@ -54,6 +55,12 @@ def create_document_endpoint(
         raise HTTPException(status_code=400, detail="Only PDF files allowed.")
     
     if current_user is None:
+        identifier = request.client.host
+        is_allowed, message = check_and_update_guest_limit(db, identifier)
+        
+        if not is_allowed:
+            raise HTTPException(status_code=403, detail=message)
+            
         now = datetime.now(timezone.utc)
         public_id = f"guest-{uuid.uuid4()}" 
         save_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.pdf")
@@ -89,11 +96,12 @@ def get_guest_limit_status(request: Request, db: Session = Depends(get_db)):
         return {"usage_count": 0}
 
     now = datetime.now(timezone.utc)
-    last_reset = usage.last_reset
-    if last_reset.tzinfo is None:
-        last_reset = last_reset.replace(tzinfo=timezone.utc)
+    last_reset = usage.last_reset.replace(tzinfo=timezone.utc) if usage.last_reset.tzinfo is None else usage.last_reset
 
     if now - last_reset > timedelta(days=1):
+        usage.count = 0
+        usage.last_reset = now
+        db.commit()
         return {"usage_count": 0}
 
     return {"usage_count": usage.count}
@@ -121,14 +129,9 @@ def delete_document_endpoint(
     if doc.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to destroy this scroll")
     
-    db.query(GroupActivity).filter(GroupActivity.document_public_id == public_id).update(
-        {GroupActivity.document_public_id: None}
-    )
-    db.commit()
-
     deleted = delete_document_service(db=db, public_id=public_id)
     if not deleted:
-        raise HTTPException(status_code=500, detail="The scroll is protected by dark magic (Database error)")
+        raise HTTPException(status_code=500, detail="Database error during deletion")
     
     return {"message" : "Document deleted"}
 
@@ -222,12 +225,12 @@ def share_document(
     db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_user)
 ):
-    # 1. Fetch Doc
+    # Fetch Doc
     doc = get_document_by_public_id(db, public_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     
-    # 2. Permissions
+    # Permissions
     if doc.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not your scroll to share")
     
@@ -235,14 +238,26 @@ def share_document(
     if not group:
          raise HTTPException(status_code=404, detail="Group not found")
 
-    # 3. Check Group Membership
+    # Verifies user's group membership
     if not is_user_member_of_group(db, current_user.id, group_id) and not current_user.is_admin:
          raise HTTPException(status_code=403, detail="You are not a member of this War Room")
+
+    # Checks for duplicates
+    existing_share = db.query(GroupActivity).filter(
+        GroupActivity.group_id == group_id,
+        GroupActivity.document_public_id == public_id
+    ).first()
+
+    if existing_share:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"The scroll '{doc.title}' is already present in this War Room."
+        )
+    # --------------------------------------------
 
     # 4. Perform Share (DB Update)
     share_document_with_group(db, public_id, group_id)
     
-    # 5. LOG ACTIVITY
     new_activity = GroupActivity(
         group_id=group_id,
         user_id=current_user.id,

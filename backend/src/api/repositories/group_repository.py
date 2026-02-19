@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from src.models.group import Group, user_group_association, GroupActivity
 from src.models.user import User
 from src.models.document import Document
+import random
+import string
 
 
 def create_group(db: Session, name: str, description: str, creator_id: int):
@@ -13,7 +15,8 @@ def create_group(db: Session, name: str, description: str, creator_id: int):
     new_group = Group(
         name=name,
         description=description,
-        created_by_id=creator_id
+        created_by_id=creator_id,
+        access_code=generate_unique_code(db)
     )
     db.add(new_group)
     db.commit()
@@ -73,8 +76,15 @@ def get_group_activities(db: Session, group_id: int):
             Document.title.label("document_title")
         )
         .join(User, GroupActivity.user_id == User.id)
-        .outerjoin(Document, GroupActivity.document_public_id == Document.public_id)
+        .join(Document, GroupActivity.document_public_id == Document.public_id)
         .filter(GroupActivity.group_id == group_id)
         .order_by(GroupActivity.created_at.asc())
         .all()
     )
+    
+def generate_unique_code(db: Session):
+    while True:
+        code = ''.join(random.choices(string.ascii_uppercase, k=5))
+        exists = db.query(Group).filter(Group.access_code == code).first()
+        if not exists:
+            return code

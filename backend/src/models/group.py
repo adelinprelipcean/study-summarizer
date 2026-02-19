@@ -25,6 +25,9 @@ class Group(Base):
     name = Column(String(255), unique=True, nullable=False)
     description = Column(String(500), nullable=True)
     
+    # Invite code
+    access_code = Column(String(10), unique=True, nullable=False, index=True)
+    
     # Timestamps and details for a good management and control for the admins
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     created_by_id = Column(Integer, ForeignKey("users.id"))
@@ -40,8 +43,10 @@ class GroupActivity(Base):
     id = Column(Integer, primary_key=True)
     group_id = Column(Integer, ForeignKey("groups.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
-    document_public_id = Column(String, ForeignKey("documents.public_id", ondelete="SET NULL"), nullable=True)
-    content = Column(String) # Ex: "a dat share la summarizerul"
+    
+    document_public_id = Column(String, ForeignKey("documents.public_id", ondelete="CASCADE"), nullable=False)
+    
+    content = Column(String)
     created_at = Column(DateTime, default=func.now())
 
     user = relationship("User")

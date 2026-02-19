@@ -44,6 +44,10 @@ const Dashboard = () => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [docToShare, setDocToShare] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
 
   const getCurrentUserId = () => {
     const token = localStorage.getItem("token");
@@ -90,6 +94,13 @@ const Dashboard = () => {
 
         return updatedDocs;
       });
+
+      if (!token) {
+        const limitRes = await axios.get(
+          "http://127.0.0.1:8000/api/documents/guest-limit",
+        );
+        setGuestLimit(limitRes.data.usage_count);
+      }
 
       setSelectedSummary(generatedSummary);
       setIsModalOpen(true);
@@ -148,7 +159,10 @@ const Dashboard = () => {
       setDocuments((prevDocs) => [newDoc, ...prevDocs]);
 
       if (!token) {
-        setGuestLimit((prev) => prev + 1);
+        const limitRes = await axios.get(
+          "http://127.0.0.1:8000/api/documents/guest-limit",
+        );
+        setGuestLimit(limitRes.data.usage_count);
         const currentLocalDocs = JSON.parse(
           localStorage.getItem("guest_docs") || "[]",
         );
@@ -159,7 +173,9 @@ const Dashboard = () => {
       }
     } catch (err) {
       console.error("Upload error:", err);
-      alert("The gates are barred. Upload failed.");
+      alert(
+        "Too many attemps for today. Try again tomorrow or login to increase the limits.",
+      );
     } finally {
       setIsUploading(false);
       e.target.value = null;
@@ -232,43 +248,48 @@ const Dashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsGuest(true);
+    setCurrentUser(null);
     setDocuments([]);
+    setGroups([]);
+    setActiveGroup(null);
+    setViewMode("personal");
   };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+
+    const syncEnergy = async () => {
+      try {
+        const res = await axios.get(
+          "http://127.0.0.1:8000/api/documents/guest-limit",
+        );
+        setGuestLimit(res.data.usage_count);
+      } catch (err) {
+        console.error("The energy spirits are silent (Sync failed)", err);
+      }
+    };
+
+    syncEnergy();
+
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
-        // Salvăm tot obiectul utilizator (id, username etc.)
         setCurrentUser({
           id: String(payload.sub),
-          username: payload.username || "", // Presupunând că ai username în token
+          username: payload.username || "",
         });
+        setIsGuest(false);
+        fetchGroups();
       } catch (e) {
-        console.error("Token decoding failed");
+        setIsGuest(true);
       }
+    } else {
+      setIsGuest(true);
+      const localDocs = JSON.parse(localStorage.getItem("guest_docs") || "[]");
+      setDocuments(localDocs);
     }
 
     fetchDocuments();
-
-    if (!isGuest) {
-      fetchGroups();
-    }
-
-    if (isGuest) {
-      const syncEnergy = async () => {
-        try {
-          const res = await axios.get(
-            "http://127.0.0.1:8000/api/documents/guest-limit",
-          );
-          setGuestLimit(res.data.usage_count);
-        } catch (err) {
-          console.error("The energy couldn't be synchronized", err);
-        }
-      };
-      syncEnergy();
-    }
   }, [isGuest]);
 
   const fetchGroups = async () => {
@@ -358,6 +379,17 @@ const Dashboard = () => {
   };
 
   const executeShare = async (groupId) => {
+    if (!docToShare || !docToShare.summary) {
+      setIsShareModalOpen(false);
+
+      setErrorMessage(
+        "This scroll has no AI Insight yet. Summerize before sharing it with the War Room.",
+      );
+      setIsErrorModalOpen(true);
+      setDocToShare(null);
+      return;
+    }
+
     const token = localStorage.getItem("token");
     try {
       await axios.post(
@@ -369,7 +401,10 @@ const Dashboard = () => {
       setDocToShare(null);
       alert("Scroll shared successfully!");
     } catch (err) {
-      alert("Could not share the scroll.");
+      const backendError =
+        err.response?.data?.detail || "Could not share the scroll.";
+      setErrorMessage(backendError);
+      setIsErrorModalOpen(true);
     }
   };
 
@@ -380,6 +415,42 @@ const Dashboard = () => {
       setIsModalOpen(true);
     } else {
       handleSummarize(publicId);
+    }
+  };
+
+  const handleJoinGroup = async () => {
+    if (!joinCode.trim()) return;
+    const token = localStorage.getItem("token");
+    try {
+      const res = await axios.post(
+        `http://127.0.0.1:8000/api/groups/join/${joinCode.trim()}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      alert(res.data.message);
+      setJoinCode("");
+      setIsJoinModalOpen(false);
+      fetchGroups();
+    } catch (err) {
+      const msg = err.response?.data?.detail || "Infiltration failed.";
+      setErrorMessage(msg);
+      setIsErrorModalOpen(true);
+    }
+  };
+
+  const handleRemoveShare = async (activityId) => {
+    if (!window.confirm("Remove this scroll from the War Room?")) return;
+    const token = localStorage.getItem("token");
+    try {
+      await axios.delete(
+        `http://127.0.0.1:8000/api/groups/activity/${activityId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      setActivities((prev) => prev.filter((act) => act.id !== activityId));
+    } catch (err) {
+      alert(err.response?.data?.detail || "Failed to remove scroll");
     }
   };
 
@@ -426,12 +497,11 @@ const Dashboard = () => {
                   hover: { y: 0, opacity: 1 },
                 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className="text-gray-400 dark:text-white font-black text-xl tracking-[0.2em] mt-2 select-none"
+                className="text-gray-700 dark:text-white font-black text-xl tracking-[0.2em] mt-2 select-none"
               >
                 SUMMER<span className="text-samurai-gold">EY-I</span>
               </motion.span>
 
-              {/* Subliniere subtilă animată */}
               <motion.div
                 variants={{
                   initial: { width: 0, opacity: 0 },
@@ -466,17 +536,28 @@ const Dashboard = () => {
 
             {/* War Rooms Section */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between px-2">
+              <div className="flex flex-col gap-3 px-2 mb-4">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
                   War Rooms
                 </h3>
+
                 {!isGuest && (
-                  <button
-                    onClick={() => setIsGroupModalOpen(true)} // ADAUGĂ ASTA
-                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors text-gray-400 hover:text-samurai-gold"
-                  >
-                    <Plus size={14} />
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setIsGroupModalOpen(true)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-samurai-gold/10 border border-samurai-gold/30 rounded-xl text-[10px] font-black uppercase tracking-widest text-samurai-gold hover:bg-samurai-gold hover:text-black transition-all duration-300"
+                    >
+                      <Plus size={12} strokeWidth={3} />
+                      Create
+                    </button>
+                    <button
+                      onClick={() => setIsJoinModalOpen(true)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:border-samurai-gold/50 hover:text-samurai-gold transition-all duration-300"
+                    >
+                      <Users size={12} />
+                      Join
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -562,10 +643,53 @@ const Dashboard = () => {
                   {viewMode === "personal" ? "The Archive" : activeGroup?.name}
                 </h2>
                 <div className="h-1.5 w-12 bg-samurai-gold mt-3 rounded-full"></div>
+
+                {/* Group description & Access Code */}
+                {viewMode === "group" && (
+                  <div className="flex flex-col gap-2 mt-4">
+                    {activeGroup?.description && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-sm text-gray-400 dark:text-gray-400 font-bold max-w-2xl leading-relaxed"
+                      >
+                        {activeGroup.description}
+                      </motion.p>
+                    )}
+
+                    {/* Access Code Display */}
+                    {activeGroup?.access_code && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center gap-2 group/code cursor-pointer w-fit"
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            activeGroup.access_code,
+                          );
+                          // Opțional: poți declanșa o notificare vizuală aici
+                        }}
+                      >
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-gray-600">
+                          Access Code:
+                        </span>
+                        <div className="flex items-center gap-2 bg-samurai-gold/5 border border-samurai-gold/20 px-3 py-1 rounded-lg group-hover/code:border-samurai-gold/50 transition-all">
+                          <span className="text-xs font-mono font-black text-samurai-gold tracking-widest">
+                            {activeGroup.access_code}
+                          </span>
+                          <Share2
+                            size={12}
+                            className="text-samurai-gold opacity-40 group-hover/code:opacity-100 transition-opacity"
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Zona de butoane de control (Toggle + Delete) */}
+            {/* Toggle + Delete*/}
             <div className="flex items-center gap-4">
               <ThemeToggle />
 
@@ -630,7 +754,6 @@ const Dashboard = () => {
           {/* Grid Container & Activity Log Area */}
           <div className="pb-20">
             {viewMode === "personal" ? (
-              /* MODUL PERSONAL */
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {isGuest && documents.length === 0 && (
                   <div className="col-span-full py-10 flex flex-col items-center opacity-40">
@@ -717,7 +840,7 @@ const Dashboard = () => {
                     <button
                       onClick={() => handleSummarize(doc.public_id)}
                       disabled={loadingId !== null}
-                      className="w-full bg-gray-900 dark:bg-samurai-gold text-white dark:text-black py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-samurai-gold/10"
+                      className="w-full bg-samurai-gold text-white dark:text-black py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-samurai-gold/10"
                     >
                       {loadingId === doc.public_id
                         ? "Channeling AI..."
@@ -735,95 +858,101 @@ const Dashboard = () => {
                 className="w-full"
               >
                 <div className="bg-white dark:bg-[#121214] border border-samurai-gold/20 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-                  {/* Grilă de carduri - Optimizată pentru vizibilitate */}
+                  {/* Cards Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {activities.length > 0 ? (
                       activities.map((act) => {
                         const isMe =
                           currentUser &&
                           String(act.user_id) === String(currentUser.id);
-                        const isRemoved =
-                          !act.document_title ||
-                          act.document_title === "Unknown Scroll";
 
                         return (
                           <div
                             key={act.id}
-                            className={`relative p-8 rounded-[2rem] border transition-all duration-300 flex flex-col justify-between min-h-[180px] ${
-                              isRemoved
-                                ? "bg-red-500/5 border-red-500/10 opacity-60 shadow-inner"
-                                : "bg-white/5 border-white/5 hover:border-samurai-gold/40 hover:bg-white/10 shadow-xl hover:shadow-samurai-gold/5"
-                            }`}
+                            className="relative p-8 rounded-[2rem] border transition-all duration-300 flex flex-col justify-between min-h-[180px] bg-white/5 border-white/5 hover:border-samurai-gold/40 hover:bg-white/10 shadow-xl hover:shadow-samurai-gold/5"
                           >
                             {/* Header Card: User & Timestamp */}
-                            <div className="flex justify-between items-start mb-4">
-                              <div className="flex items-center gap-3">
-                                <div
-                                  className={`w-2.5 h-2.5 rounded-full ${isRemoved ? "bg-red-600" : "bg-samurai-gold animate-pulse shadow-[0_0_10px_rgba(212,175,55,0.6)]"}`}
-                                />
+                            <div className="flex justify-between items-center mb-4">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-2 h-2 rounded-full bg-samurai-gold animate-pulse shadow-[0_0_8px_rgba(212,175,55,0.8)] shrink-0" />
                                 <span
-                                  className={`text-xs font-black uppercase tracking-widest ${isMe ? "text-samurai-gold" : "text-gray-400"}`}
+                                  className={`text-[10px] font-black uppercase tracking-widest truncate ${isMe ? "text-samurai-gold" : "text-gray-400"}`}
                                 >
-                                  @{isMe ? "You" : act.username}
+                                  @{act.username}
                                 </span>
                               </div>
-                              <div className="bg-gray-100 dark:bg-[#121214] px-3 py-1 rounded-full border border-white/5 shadow-inner">
-                                <span className="text-[14px] font-mono text-black dark:text-white tracking-tighter">
-                                  {new Date(act.created_at).toLocaleTimeString(
-                                    [],
-                                    { hour: "2-digit", minute: "2-digit" },
+
+                              {/* Trash button and Time box */}
+                              <div className="flex items-center gap-2">
+                                {/* Delete button */}
+                                {currentUser &&
+                                  String(act.user_id) ===
+                                    String(currentUser.id) && (
+                                    <button
+                                      onClick={() => handleRemoveShare(act.id)}
+                                      className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                      title="Remove scroll from War Room"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
                                   )}
-                                </span>
+
+                                {/* Shared document time */}
+                                <div className="bg-black/4 dark:bg-white/5 px-2 py-1 rounded-lg border border-white/5 shadow-inner shrink-0">
+                                  <span className="text-[12px] md:text-[11px] font-mono text-gray-500 dark:text-gray-400 tracking-tighter whitespace-nowrap">
+                                    {(() => {
+                                      let dateStr = act.created_at;
+                                      if (
+                                        dateStr &&
+                                        !dateStr.includes("Z") &&
+                                        !dateStr.includes("+")
+                                      ) {
+                                        dateStr =
+                                          dateStr.replace(" ", "T") + "Z";
+                                      }
+                                      const date = new Date(dateStr);
+                                      return date.toLocaleTimeString(
+                                        navigator.language,
+                                        {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                          hour12: false,
+                                        },
+                                      );
+                                    })()}
+                                  </span>
+                                </div>
                               </div>
                             </div>
 
-                            {/* Content: Title or Redacted Message */}
+                            {/* Content: Title */}
                             <div className="flex-1 flex items-center py-2">
-                              {isRemoved ? (
-                                <div className="flex items-center gap-3">
-                                  <Lock size={16} className="text-red-600" />
-                                  <p className="text-sm text-red-600 italic font-medium leading-relaxed">
-                                    "This scroll has been permanently retracted
-                                    by the owner."
-                                  </p>
-                                </div>
-                              ) : (
-                                <div className="w-full">
-                                  <h4 className="text-lg font-bold text-black dark:text-white group-hover:text-samurai-gold transition-colors line-clamp-2 leading-snug mb-1">
-                                    {act.document_title}
-                                  </h4>
-                                  <div className="h-0.5 w-8 bg-samurai-gold/30 rounded-full group-hover:w-16 transition-all" />
-                                </div>
-                              )}
+                              <div className="w-full">
+                                <h4 className="text-lg font-bold dark:text-gray-100 group-hover:text-samurai-gold transition-colors line-clamp-2 leading-snug mb-1">
+                                  {act.document_title}
+                                </h4>
+                                <div className="h-0.5 w-8 bg-samurai-gold/30 rounded-full group-hover:w-16 transition-all" />
+                              </div>
                             </div>
 
                             {/* Footer: Action Button */}
                             <div className="mt-4 pt-4 border-t border-white/5">
-                              {!isRemoved ? (
-                                <button
-                                  onClick={() =>
-                                    handleViewSharedSummary(
-                                      act.document_public_id,
-                                    )
-                                  }
-                                  className="flex items-center justify-between w-full group/btn"
-                                >
-                                  <span className="text-[10px] font-black text-samurai-gold uppercase tracking-[0.2em] group-hover/btn:tracking-[0.25em] transition-all">
-                                    View Document
-                                  </span>
-                                  <BrainCircuit
-                                    size={16}
-                                    className="text-samurai-gold opacity-40 group-hover/btn:opacity-100 group-hover/btn:scale-110 transition-all"
-                                  />
-                                </button>
-                              ) : (
-                                <div className="flex items-center gap-2 opacity-30">
-                                  <X size={14} className="text-gray-500" />
-                                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                                    Access Denied
-                                  </span>
-                                </div>
-                              )}
+                              <button
+                                onClick={() =>
+                                  handleViewSharedSummary(
+                                    act.document_public_id,
+                                  )
+                                }
+                                className="flex items-center justify-between w-full group/btn"
+                              >
+                                <span className="text-[10px] font-black text-samurai-gold uppercase tracking-[0.2em] group-hover/btn:tracking-[0.25em] transition-all">
+                                  VIEW DOCUMENT
+                                </span>
+                                <BrainCircuit
+                                  size={16}
+                                  className="text-samurai-gold opacity-40 group-hover/btn:opacity-100 group-hover/btn:scale-110 transition-all"
+                                />
+                              </button>
                             </div>
                           </div>
                         );
@@ -832,7 +961,7 @@ const Dashboard = () => {
                       <div className="col-span-full py-24 flex flex-col items-center opacity-30">
                         <Users size={48} className="mb-4 text-gray-400" />
                         <p className="text-sm font-black uppercase tracking-[0.2em] text-gray-500">
-                          No briefings shared yet
+                          No scrolls shared yet
                         </p>
                       </div>
                     )}
@@ -888,7 +1017,7 @@ const Dashboard = () => {
 
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="w-full mt-8 bg-samurai-gold text-black font-bold py-4 rounded-2xl uppercase tracking-widest"
+                className="w-full mt-8 bg-samurai-gold text-white dark:text-black font-bold py-4 rounded-2xl uppercase tracking-widest"
               >
                 Return to Archive
               </button>
@@ -1065,6 +1194,89 @@ const Dashboard = () => {
               >
                 Cancel
               </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isErrorModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsErrorModalOpen(false)}
+              className="absolute inset-0 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-[#121214] border border-red-500/30 w-full max-w-sm p-8 rounded-[2.5rem] relative z-10 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <X className="text-red-500" size={32} />
+              </div>
+              <h3 className="text-xl font-black font-white uppercase tracking-tighter mb-2 dark:text-white">
+                Access Denied
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
+                {errorMessage}
+              </p>
+              <button
+                onClick={() => setIsErrorModalOpen(false)}
+                className="w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest text-white hover:scale-105 duration-200 bg-gray-900 dark:bg-white/5 dark:text-white transition-transform"
+              >
+                Understood
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isJoinModalOpen && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsJoinModalOpen(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-[#121214] border border-samurai-gold/30 w-full max-w-md p-8 rounded-[2rem] relative z-10 shadow-2xl"
+            >
+              <h3 className="text-xl font-black uppercase tracking-tighter text-samurai-gold mb-6">
+                Infiltrate War Room
+              </h3>
+              <p className="text-gray-400 text-xs mb-6 uppercase tracking-widest font-bold">
+                Enter the secret access code to join the alliance.
+              </p>
+              <input
+                className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:border-samurai-gold transition-colors mb-6"
+                placeholder="Access Code"
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsJoinModalOpen(false)}
+                  className="flex-1 py-3 font-bold text-xs uppercase tracking-widest border border-gray-200 dark:border-white/10 rounded-xl"
+                >
+                  Abort
+                </button>
+                <button
+                  onClick={handleJoinGroup}
+                  className="flex-1 py-3 font-bold text-xs uppercase tracking-widest bg-samurai-gold text-black rounded-xl shadow-lg shadow-samurai-gold/20"
+                >
+                  Join Room
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

@@ -14,6 +14,7 @@ class GroupOut(GroupBase):
     id: int
     created_at: datetime
     created_by_id: int
+    access_code: str
 
 class GroupMemberOut(BaseModel):
     user_id: int
@@ -26,8 +27,9 @@ class GroupDetailsOut(GroupOut):
 class ActivityOut(BaseModel):
     id: int
     username: str
-    document_title: Optional[str] = "Deleted Document" 
-    document_public_id: Optional[str] = None
+    user_id: int
+    document_title: str
+    document_public_id: str
     content: str
     created_at: datetime
     
