@@ -70,6 +70,10 @@ GEMINI_API_KEY=your_google_gemini_api_key
 ### 3. Start the Backend & Database (Docker)
 Open a terminal in the root directory and run Docker Compose to build and start the containers:
 ``` bash
+cd backend
+uvicorn src.main:app --reload
+```
+``` bash
 docker-compose up -d --build
 ```
 The FastAPI backend will be available at http://127.0.0.1:8000 and the PostgreSQL database will run on port 5435.
