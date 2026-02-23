@@ -31,3 +31,9 @@ class User(Base):
     
     # Many-To-Many: Many users can be part of multiple groups
     groups = relationship("Group", secondary="user_group_association", back_populates="members")
+    
+    # Helper variable so admins can ban users that don't comply with internal policy
+    is_banned = Column(Boolean, default=False)
+    
+    # Description of the ban reason to give user feedback
+    ban_reason = Column(String, nullable=True)

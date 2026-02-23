@@ -3,6 +3,7 @@ Pydantic schemas for User authentication.
 """
 from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import datetime
+from typing import Optional
 
 class UserCreate(BaseModel):
     username: str
@@ -24,3 +25,10 @@ class UserOut(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    
+class UserAdminOut(UserOut):
+    is_banned: bool
+    ban_reason: Optional[str] = None
+    
+class BanUserRequest(BaseModel):
+    reason: Optional[str] = None

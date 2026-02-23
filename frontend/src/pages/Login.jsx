@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, ArrowRight } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const navigate = useNavigate();
+  const [banInfo, setBanInfo] = useState({ show: false, reason: "" });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,7 +20,23 @@ const Login = () => {
       localStorage.setItem("token", res.data.access_token);
       navigate("/dashboard");
     } catch (err) {
-      alert("Invalid credentials, warrior.");
+      console.log("Error status:", err.response?.status);
+      console.log("Error data:", err.response?.data);
+
+      const status = err.response?.status;
+      const detail = err.response?.data?.detail;
+
+      if (
+        status === 403 ||
+        (detail && detail.toLowerCase().includes("suspended"))
+      ) {
+        setBanInfo({
+          show: true,
+          reason: detail || "Your access has been revoked.",
+        });
+      } else {
+        alert("Invalid credentials, warrior.");
+      }
     }
   };
 
@@ -88,7 +105,7 @@ const Login = () => {
             </Link>
           </p>
 
-          {/* BUTON BACK */}
+          {/* Back button */}
           <div className="mt-6 flex justify-center">
             <button
               onClick={() => navigate("/dashboard")}
@@ -99,6 +116,42 @@ const Login = () => {
           </div>
         </div>
       </motion.div>
+
+      {/* Ban message box */}
+      <AnimatePresence>
+        {banInfo.show && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-[#121214] border border-red-500/30 w-full max-w-sm p-8 rounded-[2.5rem] relative z-10 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShieldCheck className="text-red-500" size={32} />
+              </div>
+              <h3 className="text-xl font-black uppercase tracking-tighter mb-2 text-red-500">
+                You have been banned
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
+                {banInfo.reason}
+              </p>
+              <button
+                onClick={() => setBanInfo({ ...banInfo, show: false })}
+                className="w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest bg-red-500 text-white hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
+              >
+                I understand
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

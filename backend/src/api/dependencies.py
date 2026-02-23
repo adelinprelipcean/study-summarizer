@@ -38,6 +38,12 @@ def get_current_user(
     user = get_user_by_id(db, user_id=int(user_id))
     if user is None:
         raise credentials_exception
+    
+    if getattr(user, 'is_banned', False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Account suspended: {user.ban_reason or 'No reason provided'}"
+        )
     return user
 
 def get_optional_current_user(

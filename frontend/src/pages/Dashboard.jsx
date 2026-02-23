@@ -15,6 +15,7 @@ import {
   Trash2,
   Check,
   Plus,
+  ShieldAlert,
 } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -279,6 +280,7 @@ const Dashboard = () => {
           setCurrentUser({
             id: String(res.data.id),
             username: res.data.username || "",
+            is_admin: res.data.is_admin,
           });
           setIsGuest(false);
 
@@ -547,6 +549,15 @@ const Dashboard = () => {
               >
                 <FileText size={20} /> My Scrolls
               </button>
+              {/* Admin Panel */}
+              {currentUser?.is_admin && (
+                <button
+                  onClick={() => navigate("/admin")}
+                  className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold transition-all duration-300 shadow-lg text-red-500 hover:bg-red-500/10 border border-red-500/20 mt-4"
+                >
+                  <ShieldAlert size={20} /> Admin Panel
+                </button>
+              )}
             </div>
 
             {/* War Rooms Section */}
@@ -708,7 +719,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-4">
               <ThemeToggle />
 
-              {/* Buton DELETE*/}
+              {/* DELETE*/}
               {viewMode === "group" &&
                 activeGroup &&
                 currentUser &&

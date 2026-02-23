@@ -30,5 +30,11 @@ def login_user_service(db: Session, data: UserLogin) -> Token:
     if not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Invalid credentials")
     
+    if getattr(user, 'is_banned', False):
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Account suspended: {user.ban_reason or 'No reason provided'}"
+        )
+    
     access_token = create_access_token(subject=user.id)
     return Token(access_token=access_token, token_type="bearer")
