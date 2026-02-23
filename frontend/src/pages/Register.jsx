@@ -29,7 +29,6 @@ const Register = () => {
         type: "success",
       });
 
-      // Redirect după un scurt delay pentru a vedea confirmarea
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       setFeedback({

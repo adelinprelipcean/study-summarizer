@@ -269,28 +269,43 @@ const Dashboard = () => {
       }
     };
 
-    syncEnergy();
+    const setupDashboard = async () => {
+      if (token) {
+        try {
+          const res = await axios.get("http://127.0.0.1:8000/api/users/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
 
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        setCurrentUser({
-          id: String(payload.sub),
-          username: payload.username || "",
-        });
-        setIsGuest(false);
-        fetchGroups();
-      } catch (e) {
+          setCurrentUser({
+            id: String(res.data.id),
+            username: res.data.username || "",
+          });
+          setIsGuest(false);
+
+          fetchGroups();
+          fetchDocuments();
+        } catch (e) {
+          console.error("Token expired.");
+          localStorage.removeItem("token");
+
+          setIsGuest(true);
+          const localDocs = JSON.parse(
+            localStorage.getItem("guest_docs") || "[]",
+          );
+          setDocuments(localDocs);
+        }
+      } else {
         setIsGuest(true);
+        const localDocs = JSON.parse(
+          localStorage.getItem("guest_docs") || "[]",
+        );
+        setDocuments(localDocs);
       }
-    } else {
-      setIsGuest(true);
-      const localDocs = JSON.parse(localStorage.getItem("guest_docs") || "[]");
-      setDocuments(localDocs);
-    }
+    };
 
-    fetchDocuments();
-  }, [isGuest]);
+    syncEnergy();
+    setupDashboard();
+  }, []);
 
   const fetchGroups = async () => {
     const token = localStorage.getItem("token");

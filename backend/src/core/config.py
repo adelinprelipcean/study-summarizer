@@ -17,6 +17,6 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: SecretStr | None = None
     UPLOAD_DIR: str = "uploads"
     ENCODING_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: timedelta = timedelta(minutes=30)
+    ACCESS_TOKEN_EXPIRE_MINUTES: timedelta = timedelta(hours=24)
 
 settings = Settings()
