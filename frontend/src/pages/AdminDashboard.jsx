@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldAlert,
   UserX,
@@ -12,12 +11,13 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import ThemeToggle from "../components/ThemeToggle";
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("username"); // "username", "status", "safety"
+  const [sortBy, setSortBy] = useState("username");
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
@@ -49,13 +49,15 @@ const AdminDashboard = () => {
         { reason: reason },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      fetchUsers(); // Refresh list
+      fetchUsers();
     } catch (err) {
       alert(err.response?.data?.detail || "Action failed.");
     }
   };
 
-  // --- LOGICA DE FILTRARE ȘI SORTARE ---
+  {
+    /* Filter logic */
+  }
   const getFilteredAndSortedUsers = () => {
     let result = users.filter(
       (user) =>
@@ -67,11 +69,9 @@ const AdminDashboard = () => {
       if (sortBy === "username") {
         return a.username.localeCompare(b.username);
       } else if (sortBy === "status") {
-        // Suspendatii apar primii
         if (a.is_banned === b.is_banned) return 0;
         return a.is_banned ? -1 : 1;
       } else if (sortBy === "safety") {
-        // Cei cu probleme de siguranta apar primii
         if (a.has_dangerous_docs === b.has_dangerous_docs) return 0;
         return a.has_dangerous_docs ? -1 : 1;
       }
@@ -96,16 +96,14 @@ const AdminDashboard = () => {
               <ArrowLeft size={16} /> Return to Archive
             </button>
             <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tighter">
-              Admin Citadel
+              Admin Panel
             </h1>
             <div className="h-1.5 w-20 bg-samurai-gold mt-2 rounded-full"></div>
           </div>
-          <div className="bg-samurai-gold/10 p-3 md:p-4 rounded-2xl border border-samurai-gold/30">
-            <ShieldAlert className="text-samurai-gold" size={28} />
-          </div>
+          <ThemeToggle />
         </header>
 
-        {/* CONTROALE: SEARCH & SORT */}
+        {/* SEARCH & SORT */}
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           {/* Live Search */}
           <div className="relative flex-1">
@@ -114,7 +112,7 @@ const AdminDashboard = () => {
             </div>
             <input
               type="text"
-              placeholder="Search warrior by username or email..."
+              placeholder="Search user by username or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-11 pr-4 py-4 bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 rounded-2xl focus:border-samurai-gold outline-none transition-all shadow-lg text-sm font-medium"
@@ -138,13 +136,13 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* --- VIEW PENTRU DESKTOP (TABEL) --- */}
+        {/* Desktop View */}
         <div className="hidden md:block bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 dark:bg-white/5 border-b dark:border-white/10">
                 <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                  Warrior
+                  Username
                 </th>
                 <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-500">
                   Email Scroll
@@ -222,14 +220,14 @@ const AdminDashboard = () => {
           )}
         </div>
 
-        {/* --- VIEW PENTRU MOBIL (CARDURI COMPACTE) --- */}
+        {/* Mobile View */}
         <div className="md:hidden space-y-4">
           {displayUsers.map((user) => (
             <div
               key={user.id}
               className="bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/5 rounded-[2rem] p-5 shadow-lg flex flex-col gap-4"
             >
-              {/* Header Card: Username + Actiune */}
+              {/* Header Card: Username + Action */}
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-bold text-lg leading-none mb-1">

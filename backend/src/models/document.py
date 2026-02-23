@@ -38,4 +38,5 @@ class Document(Base):
     
     # AI generated summary of the document
     summary = Column(Text, nullable=True)
+    summary_type = Column(String, nullable=True)
     

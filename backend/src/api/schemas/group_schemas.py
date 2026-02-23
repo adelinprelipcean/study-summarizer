@@ -32,6 +32,7 @@ class ActivityOut(BaseModel):
     document_public_id: str
     content: str
     created_at: datetime
+    summary_type: Optional[str] = None
     
     class Config:
         from_attributes = True

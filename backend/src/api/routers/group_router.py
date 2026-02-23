@@ -91,6 +91,7 @@ def get_group_activity(
             User.username,
             User.id.label("user_id"),
             Document.title.label("document_title"),
+            Document.summary_type.label("summary_type"),
             GroupActivity.document_public_id,
             GroupActivity.content,
             GroupActivity.created_at

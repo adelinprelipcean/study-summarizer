@@ -24,6 +24,7 @@ class DocumentOut(BaseModel):
     uploaded_at: datetime
     summary: Optional[str] = None
     owner_username: Optional[str] = None
+    summary_type: Optional[str] = None
     
     
 class DocumentsListOut(BaseModel):

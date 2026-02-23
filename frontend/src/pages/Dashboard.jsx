@@ -49,6 +49,7 @@ const Dashboard = () => {
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [joinCode, setJoinCode] = useState("");
+  const [summaryTypes, setSummaryTypes] = useState({});
 
   const getCurrentUserId = () => {
     const token = localStorage.getItem("token");
@@ -72,27 +73,33 @@ const Dashboard = () => {
       return;
     }
 
+    const currentPreference =
+      typeof summaryTypes === "object" ? summaryTypes[publicId] : "Simple";
+    const type = isGuest ? "Simple" : currentPreference || "Simple";
+
     setLoadingId(publicId);
     try {
       const token = localStorage.getItem("token");
+
       const res = await axios.post(
-        `http://127.0.0.1:8000/api/documents/${publicId}/summarize`,
-        { summary_type: "concise" },
+        `http://127.0.0.1:8000/api/documents/${publicId}/summarize?summary_type=${type}`,
+        {},
         { headers: { ...(token && { Authorization: `Bearer ${token}` }) } },
       );
 
       const generatedSummary = res.data.summary;
+      const generatedType = res.data.summary_type;
 
       setDocuments((prevDocs) => {
         const updatedDocs = prevDocs.map((d) =>
-          d.public_id === publicId ? { ...d, summary: generatedSummary } : d,
+          d.public_id === publicId
+            ? { ...d, summary: generatedSummary, summary_type: generatedType }
+            : d,
         );
 
-        const token = localStorage.getItem("token");
         if (!token) {
           localStorage.setItem("guest_docs", JSON.stringify(updatedDocs));
         }
-
         return updatedDocs;
       });
 
@@ -828,9 +835,19 @@ const Dashboard = () => {
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white break-words">
                               {doc.title}
                             </h3>
-                            <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
-                              Ref: {doc.public_id}
-                            </p>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <p className="text-[10px] text-gray-400 uppercase tracking-widest">
+                                Ref: {doc.public_id}
+                              </p>
+
+                              {doc.summary && (
+                                <span className="px-2 py-0.5 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md text-[8px] font-black uppercase tracking-widest text-samurai-gold">
+                                  {doc.summary_type === "detailed"
+                                    ? "Detailed"
+                                    : "Simple"}
+                                </span>
+                              )}
+                            </div>
                             <span className="opacity-0 group-hover:opacity-100 text-[10px] text-samurai-gold font-bold uppercase tracking-tighter transition-opacity absolute -bottom-4 left-0">
                               Click title to edit
                             </span>
@@ -863,6 +880,43 @@ const Dashboard = () => {
                       )}
                     </div>
 
+                    {!isGuest && !doc.summary && (
+                      <div className="mb-4 mt-auto">
+                        <div className="flex bg-gray-100 dark:bg-[#1a1a1c] p-1.5 rounded-[1rem] border border-gray-200 dark:border-white/5 shadow-inner">
+                          <button
+                            onClick={() =>
+                              setSummaryTypes((prev) => ({
+                                ...prev,
+                                [doc.public_id]: "Simple",
+                              }))
+                            }
+                            className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                              (summaryTypes[doc.public_id] || "Simple") ===
+                              "Simple"
+                                ? "bg-white dark:bg-white/10 text-samurai-gold shadow-sm"
+                                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                            }`}
+                          >
+                            Simple
+                          </button>
+                          <button
+                            onClick={() =>
+                              setSummaryTypes((prev) => ({
+                                ...prev,
+                                [doc.public_id]: "detailed",
+                              }))
+                            }
+                            className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                              summaryTypes[doc.public_id] === "detailed"
+                                ? "bg-white dark:bg-white/10 text-samurai-gold shadow-sm"
+                                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                            }`}
+                          >
+                            Detailed
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     <button
                       onClick={() => handleSummarize(doc.public_id)}
                       disabled={loadingId !== null}
@@ -954,10 +1008,20 @@ const Dashboard = () => {
                             {/* Content: Title */}
                             <div className="flex-1 flex items-center py-2">
                               <div className="w-full">
-                                <h4 className="text-lg font-bold dark:text-gray-100 group-hover:text-samurai-gold transition-colors line-clamp-2 leading-snug mb-1">
-                                  {act.document_title}
-                                </h4>
-                                <div className="h-0.5 w-8 bg-samurai-gold/30 rounded-full group-hover:w-16 transition-all" />
+                                <div className="w-full">
+                                  <h4 className="text-lg font-bold dark:text-gray-100 group-hover:text-samurai-gold transition-colors line-clamp-2 leading-snug">
+                                    {act.document_title}
+                                  </h4>
+                                  <div className="flex items-center gap-2 mt-1 mb-1">
+                                    <span className="px-2 py-0.5 bg-black/20 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md text-[8px] font-black uppercase tracking-widest text-samurai-gold">
+                                      {act.summary_type === "detailed" ||
+                                      act.document_summary_type === "detailed"
+                                        ? "Detailed"
+                                        : "Simple"}
+                                    </span>
+                                  </div>
+                                  <div className="h-0.5 w-8 bg-samurai-gold/30 rounded-full group-hover:w-16 transition-all" />
+                                </div>
                               </div>
                             </div>
 

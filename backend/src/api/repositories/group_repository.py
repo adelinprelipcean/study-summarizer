@@ -72,6 +72,7 @@ def get_group_activities(db: Session, group_id: int):
             GroupActivity.content,
             GroupActivity.created_at,
             GroupActivity.document_public_id,
+            Document.summary_type.label("summary_type"),
             User.username,
             Document.title.label("document_title")
         )

@@ -181,17 +181,35 @@ def summarize_document(
         raise HTTPException(status_code=400, detail="Could not extract text from PDF (scanned or empty?)")
 
     try:
-        summary = generate_summary(text_content, summary_type)
+        ai_result = generate_summary(text_content, summary_type)
+        summary_text = ai_result["summary"]
+        is_dangerous_flag = ai_result["is_dangerous"]
+
+        print(f"--- DEBUG ROUTER ---")
+        print(f"AI Result received in router: {ai_result}")
         
         if doc:
-            doc.summary = summary
+            
+            print(f"Updating Doc ID {doc.public_id}. Value to save: {is_dangerous_flag}")
+            
+            db.add(doc)
+            doc.summary = summary_text
+            doc.is_dangerous = bool(is_dangerous_flag)
+            doc.summary_type = summary_type
             db.commit()
             db.refresh(doc)
             
+            print(f"Post-Commit Check: {doc.is_dangerous}")
+            
+        return {
+            "public_id": public_id, 
+            "summary": summary_text, 
+            "summary_type": summary_type,
+            "is_dangerous": is_dangerous_flag
+        }
+            
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI Error: {str(e)}")
-    
-    return {"public_id": public_id, "summary": summary}
 
 @router.patch("/{public_id}/rename", response_model=DocumentOut)
 def rename_document_endpoint(
