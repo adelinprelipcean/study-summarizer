@@ -8,7 +8,8 @@ from src.api.repositories.group_repository import (
     add_user_to_group, 
     get_user_groups,
     is_user_member_of_group,
-    get_group_documents
+    get_group_documents,
+    remove_user_from_group
 )
 from src.api.repositories.user_repository import get_user_by_id
 from src.api.dependencies import get_current_user
@@ -160,3 +161,23 @@ def remove_shared_document(
     db.commit()
     
     return {"message": "Scroll removed from War Room"}
+
+@router.post("/leave/{group_id}", status_code=status.HTTP_200_OK)
+def leave_group(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    group = get_group_by_id(db, group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="War Room not found")
+        
+    if group.created_by_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Moderators cannot leave the room, they must delete it.")
+        
+    if not is_user_member_of_group(db, current_user.id, group_id):
+        raise HTTPException(status_code=400, detail="You are not a member of this room.")
+        
+    remove_user_from_group(db, user_id=current_user.id, group_id=group_id)
+    
+    return {"message": f"Successfully left {group.name}"}

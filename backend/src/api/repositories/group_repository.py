@@ -89,3 +89,12 @@ def generate_unique_code(db: Session):
         exists = db.query(Group).filter(Group.access_code == code).first()
         if not exists:
             return code
+        
+def remove_user_from_group(db: Session, user_id: int, group_id: int):
+    statement = user_group_association.delete().where(
+        (user_group_association.c.user_id == user_id) & 
+        (user_group_association.c.group_id == group_id)
+    )
+    db.execute(statement)
+    db.commit()
+    return True

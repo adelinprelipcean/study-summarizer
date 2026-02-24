@@ -526,6 +526,8 @@ const Dashboard = () => {
       );
       setGroups((prev) => prev.filter((g) => g.id !== groupToDelete.id));
       switchToPersonal();
+      setSuccessMessage(`You deleted "${groupToDelete.name}".`);
+      setIsSuccessModalOpen(true);
     } catch (err) {
       setErrorMessage("The spirits refuse to dismantle this chamber.");
       setIsErrorModalOpen(true);
