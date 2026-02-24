@@ -50,6 +50,10 @@ const Dashboard = () => {
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [summaryTypes, setSummaryTypes] = useState({});
+  const [shareSuccessMessage, setShareSuccessMessage] = useState("");
+  const [sharedGroupIds, setSharedGroupIds] = useState([]);
+  const [groupToDelete, setGroupToDelete] = useState(null);
+  const [shareToRemove, setShareToRemove] = useState(null);
 
   const getCurrentUserId = () => {
     const token = localStorage.getItem("token");
@@ -399,20 +403,23 @@ const Dashboard = () => {
 
   const promptShare = (doc) => {
     setDocToShare(doc);
+    setSharedGroupIds([]);
     setIsShareModalOpen(true);
   };
 
   const executeShare = async (groupId) => {
     if (!docToShare || !docToShare.summary) {
       setIsShareModalOpen(false);
-
       setErrorMessage(
-        "This scroll has no AI Insight yet. Summerize before sharing it with the War Room.",
+        "This scroll has no AI Insight yet. Summarize before sharing it with the War Room.",
       );
       setIsErrorModalOpen(true);
       setDocToShare(null);
       return;
     }
+
+    const targetGroup = groups.find((g) => g.id === groupId);
+    const groupName = targetGroup ? targetGroup.name : "the War Room";
 
     const token = localStorage.getItem("token");
     try {
@@ -421,14 +428,25 @@ const Dashboard = () => {
         {},
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      setIsShareModalOpen(false);
-      setDocToShare(null);
-      alert("Scroll shared successfully!");
+
+      setShareSuccessMessage(`Shared successfully to ${groupName}!`);
+
+      setSharedGroupIds((prev) => [...prev, groupId]);
+
+      setTimeout(() => {
+        setShareSuccessMessage("");
+      }, 3000);
     } catch (err) {
       const backendError =
         err.response?.data?.detail || "Could not share the scroll.";
-      setErrorMessage(backendError);
-      setIsErrorModalOpen(true);
+
+      if (backendError.toLowerCase().includes("already")) {
+        setSharedGroupIds((prev) => [...prev, groupId]);
+        setShareSuccessMessage(`Already shared to ${groupName}.`);
+      } else {
+        setErrorMessage(backendError);
+        setIsErrorModalOpen(true);
+      }
     }
   };
 
@@ -475,6 +493,54 @@ const Dashboard = () => {
       setActivities((prev) => prev.filter((act) => act.id !== activityId));
     } catch (err) {
       alert(err.response?.data?.detail || "Failed to remove scroll");
+    }
+  };
+
+  const promptDeleteGroup = () => {
+    if (!activeGroup) return;
+    setGroupToDelete(activeGroup);
+  };
+
+  const executeDeleteGroup = async () => {
+    if (!groupToDelete) return;
+    const token = localStorage.getItem("token");
+    try {
+      await axios.delete(
+        `http://127.0.0.1:8000/api/groups/${groupToDelete.id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      setGroups((prev) => prev.filter((g) => g.id !== groupToDelete.id));
+      switchToPersonal();
+    } catch (err) {
+      setErrorMessage("The spirits refuse to dismantle this chamber.");
+      setIsErrorModalOpen(true);
+    } finally {
+      setGroupToDelete(null);
+    }
+  };
+
+  const promptRemoveShare = (activity) => {
+    setShareToRemove(activity);
+  };
+
+  const executeRemoveShare = async () => {
+    if (!shareToRemove) return;
+    const token = localStorage.getItem("token");
+    try {
+      await axios.delete(
+        `http://127.0.0.1:8000/api/groups/activity/${shareToRemove.id}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setActivities((prev) =>
+        prev.filter((act) => act.id !== shareToRemove.id),
+      );
+    } catch (err) {
+      setErrorMessage(err.response?.data?.detail || "Failed to remove scroll");
+      setIsErrorModalOpen(true);
+    } finally {
+      setShareToRemove(null);
     }
   };
 
@@ -735,7 +801,7 @@ const Dashboard = () => {
                   <motion.button
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    onClick={handleDeleteActiveGroup}
+                    onClick={promptDeleteGroup}
                     className="flex items-center gap-2 px-3 py-3 rounded-xl border border-red-500/30 text-red-500 font-black text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all duration-200 shadow-lg"
                   >
                     <Trash2 size={16} />
@@ -969,7 +1035,7 @@ const Dashboard = () => {
                                   String(act.user_id) ===
                                     String(currentUser.id) && (
                                     <button
-                                      onClick={() => handleRemoveShare(act.id)}
+                                      onClick={() => promptRemoveShare(act)}
                                       className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
                                       title="Remove scroll from War Room"
                                     >
@@ -1155,9 +1221,7 @@ const Dashboard = () => {
                     promptShare(doc);
                   }}
                   className="text-gray-400 hover:text-samurai-gold hover:scale-125 transition-all p-2"
-                >
-                  <Share2 size={18} />
-                </button>
+                ></button>
                 <button
                   onClick={executeDelete}
                   className="flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
@@ -1241,7 +1305,11 @@ const Dashboard = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsShareModalOpen(false)}
+              onClick={() => {
+                setIsShareModalOpen(false);
+                setDocToShare(null);
+                setShareSuccessMessage("");
+              }}
               className="absolute inset-0 bg-black/80 backdrop-blur-md"
             />
             <motion.div
@@ -1253,6 +1321,22 @@ const Dashboard = () => {
               <h3 className="text-lg font-black uppercase text-samurai-gold mb-4 text-center">
                 Share to War Room
               </h3>
+
+              {/* Mesajul elegant de succes */}
+              <AnimatePresence>
+                {shareSuccessMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -10, height: 0 }}
+                    className="overflow-hidden mb-4"
+                  >
+                    <div className="p-3 bg-green-500/10 border border-green-500/30 text-green-500 rounded-xl text-[10px] font-black uppercase tracking-widest text-center flex items-center justify-center gap-2">
+                      <Check size={14} strokeWidth={3} /> {shareSuccessMessage}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                 {groups.length > 0 ? (
@@ -1279,10 +1363,14 @@ const Dashboard = () => {
               </div>
 
               <button
-                onClick={() => setIsShareModalOpen(false)}
-                className="w-full mt-6 py-3 bg-gray-200 dark:bg-white/10 rounded-xl font-bold text-xs uppercase hover:bg-gray-300 dark:hover:bg-white/20 transition-colors"
+                onClick={() => {
+                  setIsShareModalOpen(false);
+                  setDocToShare(null);
+                  setShareSuccessMessage("");
+                }}
+                className="w-full mt-6 py-3 bg-gray-200 dark:bg-white/10 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-300 dark:hover:bg-white/20 transition-colors"
               >
-                Cancel
+                Done
               </button>
             </motion.div>
           </div>
@@ -1365,6 +1453,97 @@ const Dashboard = () => {
                   className="flex-1 py-3 font-bold text-xs uppercase tracking-widest bg-samurai-gold text-black rounded-xl shadow-lg shadow-samurai-gold/20"
                 >
                   Join Room
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Dismantle Room Confirmation */}
+      <AnimatePresence>
+        {groupToDelete && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setGroupToDelete(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-[#121214] border border-red-500/30 w-full max-w-sm p-8 rounded-[2rem] relative z-10 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="text-red-500" size={32} />
+              </div>
+              <h3 className="text-xl font-black uppercase tracking-tighter mb-2 dark:text-white">
+                Dismantle Room?
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
+                Are you sure you want to dismantle "{groupToDelete.name}"? This
+                action is final.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setGroupToDelete(null)}
+                  className="flex-1 py-3 rounded-xl font-bold text-xs uppercase border border-gray-200 dark:border-white/10 dark:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeDeleteGroup}
+                  className="flex-1 py-3 rounded-xl font-bold text-xs uppercase bg-red-500 text-white shadow-lg shadow-red-500/20"
+                >
+                  Dismantle
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Remove Share Confirmation */}
+      <AnimatePresence>
+        {shareToRemove && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShareToRemove(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-[#121214] border border-red-500/30 w-full max-w-sm p-8 rounded-[2rem] relative z-10 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="text-red-500" size={32} />
+              </div>
+              <h3 className="text-xl font-black uppercase tracking-tighter mb-2 dark:text-white">
+                Remove Scroll?
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
+                Remove "{shareToRemove.document_title}" from the War Room?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShareToRemove(null)}
+                  className="flex-1 py-3 rounded-xl font-bold text-xs uppercase border border-gray-200 dark:border-white/10 dark:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeRemoveShare}
+                  className="flex-1 py-3 rounded-xl font-bold text-xs uppercase bg-red-500 text-white shadow-lg shadow-red-500/20"
+                >
+                  Remove
                 </button>
               </div>
             </motion.div>

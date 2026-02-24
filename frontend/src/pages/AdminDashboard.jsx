@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import {
   ShieldAlert,
@@ -9,6 +11,7 @@ import {
   ShieldCheck,
   Search,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle";
@@ -23,6 +26,9 @@ const AdminDashboard = () => {
   const [hoveredUserId, setHoveredUserId] = useState(null);
   const [selectedDocs, setSelectedDocs] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBanModalOpen, setIsBanModalOpen] = useState(false);
+  const [userToBan, setUserToBan] = useState(null);
+  const [banReason, setBanReason] = useState("");
 
   useEffect(() => {
     fetchUsers();
@@ -77,16 +83,25 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleToggleBan = async (userId, isCurrentlyBanned) => {
-    const reason = isCurrentlyBanned ? "" : prompt("Reason for suspension:");
-    if (!isCurrentlyBanned && reason === null) return;
+  const handleToggleBanClick = (user) => {
+    if (user.is_banned) {
+      executeBanStatusChange(user.id, "");
+    } else {
+      setUserToBan(user);
+      setBanReason("");
+      setIsBanModalOpen(true);
+    }
+  };
 
+  const executeBanStatusChange = async (userId, reason) => {
     try {
       await axios.patch(
         `http://127.0.0.1:8000/api/admin/users/${userId}/ban`,
         { reason: reason },
         { headers: { Authorization: `Bearer ${token}` } },
       );
+      setIsBanModalOpen(false);
+      setUserToBan(null);
       fetchUsers();
     } catch (err) {
       alert(err.response?.data?.detail || "Action failed.");
@@ -207,27 +222,22 @@ const AdminDashboard = () => {
                   </td>
                   <td className="p-6 text-gray-500 text-sm">{user.email}</td>
 
-                  <td>
-                    {user.has_dangerous_docs ? (
-                      <div
-                        onMouseEnter={() => setHoveredUserId(user.id)}
-                        onMouseLeave={() => setHoveredUserId(null)}
-                        style={{ display: "inline-block", cursor: "pointer" }}
-                      >
-                        {hoveredUserId === user.id ? (
-                          <button
-                            onClick={() => handleViewInsight(user.id)}
-                            className="btn-view-insight"
-                          >
-                            View Insight
-                          </button>
-                        ) : (
-                          <span className="badge-dangerous">Dangerous</span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="badge-safe">Safe</span>
-                    )}
+                  <td className="p-6">
+                    <div className="flex justify-center">
+                      {user.has_dangerous_docs ? (
+                        <button
+                          onClick={() => handleViewInsight(user.id)}
+                          className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-red-500/10 text-red-500 flex items-center gap-1.5 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all duration-300 shadow-sm"
+                        >
+                          <AlertTriangle size={12} strokeWidth={3} /> Review
+                          Suspect
+                        </button>
+                      ) : (
+                        <span className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-green-500/10 text-green-500 flex items-center gap-1.5 border border-green-500/20 opacity-80">
+                          <ShieldCheck size={12} strokeWidth={3} /> Safe
+                        </span>
+                      )}
+                    </div>
                   </td>
 
                   <td className="p-6 w-32 text-center">
@@ -241,7 +251,7 @@ const AdminDashboard = () => {
                   <td className="p-6 w-24 text-right">
                     {!user.is_admin && (
                       <button
-                        onClick={() => handleToggleBan(user.id, user.is_banned)}
+                        onClick={() => handleToggleBanClick(user)}
                         className={`p-3 rounded-xl transition-all ${user.is_banned ? "bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white" : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white"}`}
                       >
                         {user.is_banned ? (
@@ -282,7 +292,7 @@ const AdminDashboard = () => {
                 </div>
                 {!user.is_admin && (
                   <button
-                    onClick={() => handleToggleBan(user.id, user.is_banned)}
+                    onClick={() => handleToggleBanClick(user)}
                     className={`p-2.5 rounded-xl transition-all shadow-md ${user.is_banned ? "bg-green-500/10 text-green-500 active:bg-green-500 active:text-white" : "bg-red-500/10 text-red-500 active:bg-red-500 active:text-white"}`}
                   >
                     {user.is_banned ? (
@@ -294,7 +304,7 @@ const AdminDashboard = () => {
                 )}
               </div>
 
-              {/* Badges Container */}
+              {/* Badges */}
               <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100 dark:border-white/5">
                 <span
                   className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center ${user.is_banned ? "bg-red-500/10 text-red-500" : "bg-green-500/10 text-green-500"}`}
@@ -303,9 +313,12 @@ const AdminDashboard = () => {
                 </span>
 
                 {user.has_dangerous_docs ? (
-                  <span className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-red-500/10 text-red-500 flex items-center gap-1.5 border border-red-500/20">
-                    <AlertTriangle size={12} strokeWidth={3} /> Dangerous
-                  </span>
+                  <button
+                    onClick={() => handleViewInsight(user.id)}
+                    className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-red-500/10 text-red-500 flex items-center gap-1.5 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all duration-300 shadow-sm active:scale-95"
+                  >
+                    <AlertTriangle size={12} strokeWidth={3} /> Review Suspect
+                  </button>
                 ) : (
                   <span className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-green-500/10 text-green-500 flex items-center gap-1.5 border border-green-500/20 opacity-80">
                     <ShieldCheck size={12} strokeWidth={3} /> Safe
@@ -323,49 +336,125 @@ const AdminDashboard = () => {
       </div>
 
       {/* Review Document */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#121214] w-full max-w-2xl rounded-[2.5rem] p-8 shadow-2xl border border-gray-200 dark:border-white/10 max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
-                <ShieldAlert className="text-red-500" /> Security Review
-              </h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-black dark:hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Background */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsModalOpen(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
 
-            <div className="space-y-6">
-              {selectedDocs.map((doc) => (
-                <div
-                  key={doc.public_id}
-                  className="p-6 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5"
+            {/* Content */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-[#121214] border border-red-500/30 w-full max-w-2xl p-8 rounded-[2.5rem] relative z-10 shadow-2xl"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-black uppercase tracking-tighter flex items-center gap-3 text-red-500">
+                  <ShieldAlert className="text-red-500" /> Security Review
+                </h2>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-gray-400 hover:text-red-500 transition-colors"
                 >
-                  <h3 className="font-bold text-samurai-gold mb-2 text-sm uppercase tracking-widest">
-                    {doc.title}
-                  </h3>
-                  <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6 whitespace-pre-wrap">
-                    {doc.summary}
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="mt-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar space-y-8">
+                {selectedDocs.map((doc) => (
+                  <div
+                    key={doc.public_id}
+                    className="pb-8 border-b border-gray-100 dark:border-white/5 last:border-0 last:pb-0"
+                  >
+                    <h3 className="font-bold text-samurai-gold mb-4 text-sm uppercase tracking-widest">
+                      {doc.title}
+                    </h3>
+
+                    <div className="prose prose-sm max-w-none text-gray-900 dark:text-gray-100 prose-p:leading-relaxed prose-li:my-2 dark:prose-invert mb-6">
+                      <ReactMarkdown>{doc.summary}</ReactMarkdown>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() =>
+                          handleMarkSafe(doc.public_id, doc.owner_id)
+                        }
+                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-500/10 text-green-500 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-green-500 hover:text-white transition-all shadow-sm"
+                      >
+                        <UserCheck size={16} /> Mark as Safe
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() =>
-                        handleMarkSafe(doc.public_id, doc.owner_id)
-                      }
-                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-500/10 text-green-500 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-green-500 hover:text-white transition-all"
-                    >
-                      <UserCheck size={16} /> Mark as Safe
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
+
+      {/* Ban User Modal */}
+      <AnimatePresence>
+        {isBanModalOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsBanModalOpen(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-[#121214] border border-red-500/30 w-full max-w-md p-8 rounded-[2rem] relative z-10 shadow-2xl"
+            >
+              <h3 className="text-xl font-black uppercase tracking-tighter text-red-500 mb-6 flex items-center gap-2">
+                <UserX size={24} /> Suspend Warrior
+              </h3>
+              <p className="text-gray-400 text-xs mb-6 uppercase tracking-widest font-bold">
+                State the reason for suspending @{userToBan?.username}.
+              </p>
+
+              <input
+                autoFocus
+                className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:border-red-500 transition-colors mb-6 text-gray-900 dark:text-white"
+                placeholder="Reason for suspension..."
+                value={banReason}
+                onChange={(e) => setBanReason(e.target.value)}
+                onKeyDown={(e) =>
+                  e.key === "Enter" &&
+                  executeBanStatusChange(userToBan.id, banReason)
+                }
+              />
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsBanModalOpen(false)}
+                  className="flex-1 py-3 font-bold text-xs uppercase tracking-widest border border-gray-200 dark:border-white/10 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() =>
+                    executeBanStatusChange(userToBan.id, banReason)
+                  }
+                  className="flex-1 py-3 font-bold text-xs uppercase tracking-widest bg-red-500 text-white rounded-xl shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors"
+                >
+                  Suspend
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
