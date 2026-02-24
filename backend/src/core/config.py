@@ -18,5 +18,6 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "uploads"
     ENCODING_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: timedelta = timedelta(hours=24)
+    MAX_FILE_SIZE: int = 10 * 1024 * 1024 # 10 MB
 
 settings = Settings()

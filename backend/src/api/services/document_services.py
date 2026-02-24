@@ -18,7 +18,7 @@ from src.api.repositories.document_repository import (
     delete_document,
     update_document_status
 )
-from src.api.schemas.document_schemas import DocumentCreate, DocumentsListOut
+from src.api.schemas.document_schemas import DocumentsListOut
 from src.models.document import Document
 from src.models.guest_usage import GuestUsage
 from src.core.config import settings
@@ -27,20 +27,24 @@ def create_document_service(db: Session, file: UploadFile, title: str, owner_id:
     count = db.query(Document).count()
     public_id = f"D{count + 1}"
     
+    ext = file.filename.split('.')[-1].lower() if '.' in file.filename else 'other'
+    if ext not in ['pdf', 'docx', 'txt']:
+        ext = 'other'
+    
     try:
         doc = create_document(
             db=db,
             public_id=public_id,
             status="uploaded",
             title=title,
-            filetype="pdf",
+            filetype=ext,
             filename=file.filename,
             owner_id=owner_id
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     
-    save_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.pdf")
+    save_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.{ext}")
     
     try:
         with open(save_path, "wb") as buffer:

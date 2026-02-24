@@ -47,6 +47,8 @@ const Dashboard = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [summaryTypes, setSummaryTypes] = useState({});
@@ -54,6 +56,7 @@ const Dashboard = () => {
   const [sharedGroupIds, setSharedGroupIds] = useState([]);
   const [groupToDelete, setGroupToDelete] = useState(null);
   const [shareToRemove, setShareToRemove] = useState(null);
+  const [groupToLeave, setGroupToLeave] = useState(null);
 
   const getCurrentUserId = () => {
     const token = localStorage.getItem("token");
@@ -150,7 +153,16 @@ const Dashboard = () => {
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("title", file.name.replace(".pdf", ""));
+
+    let cleanTitle = file.name;
+    if (cleanTitle.endsWith(".pdf")) {
+      cleanTitle = cleanTitle.replace(".pdf", "");
+    } else if (cleanTitle.endsWith(".docx")) {
+      cleanTitle = cleanTitle.replace(".docx", "");
+    } else if (cleanTitle.endsWith(".txt")) {
+      cleanTitle = cleanTitle.replace(".txt", "");
+    }
+    formData.append("title", cleanTitle);
 
     setIsUploading(true);
     try {
@@ -469,7 +481,8 @@ const Dashboard = () => {
         {},
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      alert(res.data.message);
+      setSuccessMessage(res.data.message);
+      setIsSuccessModalOpen(true);
       setJoinCode("");
       setIsJoinModalOpen(false);
       fetchGroups();
@@ -518,6 +531,35 @@ const Dashboard = () => {
       setIsErrorModalOpen(true);
     } finally {
       setGroupToDelete(null);
+    }
+  };
+
+  const promptLeaveGroup = () => {
+    if (!activeGroup) return;
+    setGroupToLeave(activeGroup);
+  };
+
+  const executeLeaveGroup = async () => {
+    if (!groupToLeave) return;
+    const token = localStorage.getItem("token");
+    try {
+      await axios.post(
+        `http://127.0.0.1:8000/api/groups/leave/${groupToLeave.id}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setGroups((prev) => prev.filter((g) => g.id !== groupToLeave.id));
+      switchToPersonal();
+
+      setSuccessMessage(`You left "${groupToLeave.name}".`);
+      setIsSuccessModalOpen(true);
+    } catch (err) {
+      setErrorMessage(
+        err.response?.data?.detail || "Could not leave the room.",
+      );
+      setIsErrorModalOpen(true);
+    } finally {
+      setGroupToLeave(null);
     }
   };
 
@@ -792,12 +834,12 @@ const Dashboard = () => {
             <div className="flex items-center gap-4">
               <ThemeToggle />
 
-              {/* DELETE*/}
+              {/* DELETE / LEAVE ROOM */}
               {viewMode === "group" &&
                 activeGroup &&
                 currentUser &&
-                String(activeGroup.created_by_id) ===
-                  String(currentUser.id) && (
+                (String(activeGroup.created_by_id) ===
+                String(currentUser.id) ? (
                   <motion.button
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -807,7 +849,17 @@ const Dashboard = () => {
                     <Trash2 size={16} />
                     Delete Room
                   </motion.button>
-                )}
+                ) : (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    onClick={promptLeaveGroup}
+                    className="flex items-center gap-2 px-3 py-3 rounded-xl border border-orange-500/30 text-orange-500 font-black text-[10px] uppercase tracking-widest hover:bg-orange-500 hover:text-white transition-all duration-200 shadow-lg"
+                  >
+                    <LogOut size={16} />
+                    Leave Room
+                  </motion.button>
+                ))}
 
               {isGuest && (
                 <div className="bg-samurai-gold/10 border border-samurai-gold/30 px-5 py-2.5 rounded-2xl flex items-center gap-2 shadow-lg shadow-samurai-gold/5 transition-all">
@@ -837,14 +889,14 @@ const Dashboard = () => {
                   <p className="text-xs text-gray-500 text-center">
                     {isUploading
                       ? "Wait for the scroll to manifest"
-                      : "PDF up to 10MB"}
+                      : "PDF/DOCX/TXT up to 10MB"}
                   </p>
                 </div>
                 <input
                   type="file"
                   className="hidden"
                   onChange={handleFileUpload}
-                  accept=".pdf"
+                  accept=".pdf,.docx,.txt"
                 />
               </label>
             </div>
@@ -920,7 +972,7 @@ const Dashboard = () => {
                           </div>
 
                           {/* Share & Delete*/}
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-1 transition-opacity">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1544,6 +1596,89 @@ const Dashboard = () => {
                   className="flex-1 py-3 rounded-xl font-bold text-xs uppercase bg-red-500 text-white shadow-lg shadow-red-500/20"
                 >
                   Remove
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Successful Group Join Modal */}
+      <AnimatePresence>
+        {isSuccessModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSuccessModalOpen(false)}
+              className="absolute inset-0 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-[#121214] border border-green-500/30 w-full max-w-sm p-8 rounded-[2.5rem] relative z-10 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check className="text-green-500" size={32} strokeWidth={3} />
+              </div>
+              <h3 className="text-xl font-black font-white uppercase tracking-tighter mb-2 dark:text-white">
+                Success
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
+                {successMessage}
+              </p>
+              <button
+                onClick={() => setIsSuccessModalOpen(false)}
+                className="w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest text-white hover:scale-105 duration-200 bg-gray-900 dark:bg-white/5 dark:text-white transition-transform"
+              >
+                Continue
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Leave Room Confirmation */}
+      <AnimatePresence>
+        {groupToLeave && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setGroupToLeave(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-[#121214] border border-orange-500/30 w-full max-w-sm p-8 rounded-[2rem] relative z-10 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <LogOut className="text-orange-500" size={32} />
+              </div>
+              <h3 className="text-xl font-black uppercase tracking-tighter mb-2 dark:text-white">
+                Leave Room?
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
+                Are you sure you want to leave "{groupToLeave.name}"? You will
+                need the access code to rejoin.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setGroupToLeave(null)}
+                  className="flex-1 py-3 rounded-xl font-bold text-xs uppercase border border-gray-200 dark:border-white/10 dark:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeLeaveGroup}
+                  className="flex-1 py-3 rounded-xl font-bold text-xs uppercase bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                >
+                  Leave
                 </button>
               </div>
             </motion.div>

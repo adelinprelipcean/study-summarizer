@@ -25,7 +25,7 @@ from src.api.services.document_services import (
 )
 from src.api.dependencies import get_current_user, get_optional_current_user
 from src.models.user import User
-from src.utils.pdf_utils import extract_text_from_pdf
+from src.utils.file_parser import extract_text_from_file
 from src.api.services.ai_service import generate_summary
 from src.api.repositories.document_repository import (
     get_document_by_public_id,
@@ -44,15 +44,24 @@ router = APIRouter()
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
 @router.post("/", response_model=DocumentOut)
-def create_document_endpoint(
+async def create_document_endpoint(
     request: Request,
     file: UploadFile = File(...),
     title: str = Form(),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_optional_current_user) 
 ):
-    if file.content_type != "application/pdf":
-        raise HTTPException(status_code=400, detail="Only PDF files allowed.")
+    file_bytes = await file.read()
+    if len(file_bytes) > settings.MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="Document is too large. Maximum allowed size is 10MB.")
+    
+    await file.seek(0)
+    
+    ext = file.filename.split('.')[-1].lower() if '.' in file.filename else ''
+    allowed_extensions = ["pdf", "docx", "txt"]
+    
+    if ext not in allowed_extensions:
+        raise HTTPException(status_code=400, detail=f"Format not allowed. Use {', '.join(allowed_extensions).upper()}.")
     
     if current_user is None:
         identifier = request.client.host
@@ -63,7 +72,7 @@ def create_document_endpoint(
             
         now = datetime.now(timezone.utc)
         public_id = f"guest-{uuid.uuid4()}" 
-        save_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.pdf")
+        save_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.{ext}")
         
         with open(save_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
@@ -71,7 +80,7 @@ def create_document_endpoint(
         return {
             "public_id": public_id,
             "title": title,
-            "filetype": "pdf",
+            "filetype": ext,
             "status": "temporary",
             "uploaded_at": now
         }
@@ -150,7 +159,6 @@ def summarize_document(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_optional_current_user)
 ):
-    file_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.pdf")
     doc = None
 
     if current_user is None:
@@ -173,12 +181,22 @@ def summarize_document(
         else:
              raise HTTPException(status_code=404, detail="Document not found in archive")
 
-    if not os.path.exists(file_path):
+    file_path = None
+    if doc:
+        file_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.{doc.filetype}")
+    else:
+        for ext in ["pdf", "docx", "txt"]:
+            possible_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.{ext}")
+            if os.path.exists(possible_path):
+                file_path = possible_path
+                break
+
+    if not file_path or not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Physical file not found on server")
         
-    text_content = extract_text_from_pdf(file_path)
+    text_content = extract_text_from_file(file_path)
     if not text_content:
-        raise HTTPException(status_code=400, detail="Could not extract text from PDF (scanned or empty?)")
+        raise HTTPException(status_code=400, detail="Could not extract text. Scroll might be scanned, empty or corrupted.")
 
     try:
         ai_result = generate_summary(text_content, summary_type)

@@ -6,7 +6,6 @@ from src.api.routers.document_router import router as document_router
 from src.api.routers.auth_router import router as auth_router
 from src.api.routers.admin_router import router as admin_router
 from src.api.routers import group_router
-from src.models.guest_usage import GuestUsage
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
