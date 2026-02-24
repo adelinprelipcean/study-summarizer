@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import {
   ShieldAlert,
@@ -20,6 +20,9 @@ const AdminDashboard = () => {
   const [sortBy, setSortBy] = useState("username");
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+  const [hoveredUserId, setHoveredUserId] = useState(null);
+  const [selectedDocs, setSelectedDocs] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -36,6 +39,41 @@ const AdminDashboard = () => {
       navigate("/dashboard");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewInsight = async (userId) => {
+    try {
+      const response = await axios.get(
+        `http://127.0.0.1:8000/api/admin/users/${userId}/dangerous-documents`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      setSelectedDocs(response.data);
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error("Error fetching documents:", error.response?.data || error);
+      alert("Failed to load insights. Check console.");
+    }
+  };
+
+  const handleMarkSafe = async (docPublicId, userId) => {
+    try {
+      await axios.patch(
+        `http://127.0.0.1:8000/api/admin/documents/${docPublicId}/verify-safe`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      const updatedDocs = selectedDocs.filter(
+        (d) => d.public_id !== docPublicId,
+      );
+      setSelectedDocs(updatedDocs);
+      if (updatedDocs.length === 0) setIsModalOpen(false);
+      fetchUsers();
+    } catch (err) {
+      alert("Failed to mark document as safe.");
     }
   };
 
@@ -169,21 +207,26 @@ const AdminDashboard = () => {
                   </td>
                   <td className="p-6 text-gray-500 text-sm">{user.email}</td>
 
-                  <td className="p-6 text-center">
+                  <td>
                     {user.has_dangerous_docs ? (
-                      <div className="inline-flex items-center gap-1.5 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-xl border border-red-500/20">
-                        <AlertTriangle size={14} strokeWidth={3} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">
-                          Dangerous
-                        </span>
+                      <div
+                        onMouseEnter={() => setHoveredUserId(user.id)}
+                        onMouseLeave={() => setHoveredUserId(null)}
+                        style={{ display: "inline-block", cursor: "pointer" }}
+                      >
+                        {hoveredUserId === user.id ? (
+                          <button
+                            onClick={() => handleViewInsight(user.id)}
+                            className="btn-view-insight"
+                          >
+                            View Insight
+                          </button>
+                        ) : (
+                          <span className="badge-dangerous">Dangerous</span>
+                        )}
                       </div>
                     ) : (
-                      <div className="inline-flex items-center gap-1.5 bg-green-500/10 text-green-500 px-3 py-1.5 rounded-xl border border-green-500/20 opacity-80">
-                        <ShieldCheck size={14} strokeWidth={3} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">
-                          Safe
-                        </span>
-                      </div>
+                      <span className="badge-safe">Safe</span>
                     )}
                   </td>
 
@@ -278,6 +321,51 @@ const AdminDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Review Document */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#121214] w-full max-w-2xl rounded-[2.5rem] p-8 shadow-2xl border border-gray-200 dark:border-white/10 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
+                <ShieldAlert className="text-red-500" /> Security Review
+              </h2>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-500 hover:text-black dark:hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {selectedDocs.map((doc) => (
+                <div
+                  key={doc.public_id}
+                  className="p-6 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5"
+                >
+                  <h3 className="font-bold text-samurai-gold mb-2 text-sm uppercase tracking-widest">
+                    {doc.title}
+                  </h3>
+                  <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6 whitespace-pre-wrap">
+                    {doc.summary}
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() =>
+                        handleMarkSafe(doc.public_id, doc.owner_id)
+                      }
+                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-500/10 text-green-500 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-green-500 hover:text-white transition-all"
+                    >
+                      <UserCheck size={16} /> Mark as Safe
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -29,6 +29,7 @@ class Token(BaseModel):
 class UserAdminOut(UserOut):
     is_banned: bool
     ban_reason: Optional[str] = None
+    has_dangerous_docs: bool = False
     
 class BanUserRequest(BaseModel):
     reason: Optional[str] = None

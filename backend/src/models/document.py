@@ -6,7 +6,7 @@ Defines the "Document" model that will be translated into a DB table.
 
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, sql, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, DateTime, sql, ForeignKey, Text, Boolean
 from sqlalchemy.orm import relationship
 from src.core.db.database import Base
 
@@ -39,4 +39,7 @@ class Document(Base):
     # AI generated summary of the document
     summary = Column(Text, nullable=True)
     summary_type = Column(String, nullable=True)
+    
+    # Safety flag
+    is_dangerous = Column(Boolean, default=False)
     

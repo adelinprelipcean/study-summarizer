@@ -184,22 +184,14 @@ def summarize_document(
         ai_result = generate_summary(text_content, summary_type)
         summary_text = ai_result["summary"]
         is_dangerous_flag = ai_result["is_dangerous"]
-
-        print(f"--- DEBUG ROUTER ---")
-        print(f"AI Result received in router: {ai_result}")
         
-        if doc:
-            
-            print(f"Updating Doc ID {doc.public_id}. Value to save: {is_dangerous_flag}")
-            
+        if doc:           
             db.add(doc)
             doc.summary = summary_text
             doc.is_dangerous = bool(is_dangerous_flag)
             doc.summary_type = summary_type
             db.commit()
             db.refresh(doc)
-            
-            print(f"Post-Commit Check: {doc.is_dangerous}")
             
         return {
             "public_id": public_id, 
@@ -271,9 +263,8 @@ def share_document(
             status_code=400, 
             detail=f"The scroll '{doc.title}' is already present in this War Room."
         )
-    # --------------------------------------------
 
-    # 4. Perform Share (DB Update)
+    # DB Update
     share_document_with_group(db, public_id, group_id)
     
     new_activity = GroupActivity(
