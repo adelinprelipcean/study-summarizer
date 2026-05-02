@@ -20,7 +20,7 @@ import {
   FileDown,
 } from "lucide-react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import logoPng from "../assets/logo_summerey.png";
 import ThemeToggle from "../components/ThemeToggle";
 
@@ -30,6 +30,7 @@ const Dashboard = () => {
   const [guestLimit, setGuestLimit] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const { groupId } = useParams();
   const [selectedSummary, setSelectedSummary] = useState(null);
   const [loadingId, setLoadingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -282,6 +283,7 @@ const Dashboard = () => {
     setGroups([]);
     setActiveGroup(null);
     setViewMode("personal");
+    navigate("/dashboard");
   };
 
   useEffect(() => {
@@ -313,7 +315,9 @@ const Dashboard = () => {
           setIsGuest(false);
 
           fetchGroups();
-          fetchDocuments();
+          if (!groupId) {
+            fetchDocuments();
+          }
         } catch (e) {
           console.error("Token expired.");
           localStorage.removeItem("token");
@@ -336,6 +340,49 @@ const Dashboard = () => {
     syncEnergy();
     setupDashboard();
   }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    if (groupId) {
+      const gId = parseInt(groupId);
+      if (groups.length > 0) {
+        const group = groups.find((g) => g.id === gId);
+        if (group && activeGroup?.id !== group.id) {
+          setViewMode("group");
+          setActiveGroup(group);
+
+          const fetchGroupData = async () => {
+            try {
+              const resDocs = await axios.get(
+                `http://127.0.0.1:8000/api/groups/${group.id}/documents`,
+                { headers: { Authorization: `Bearer ${token}` } },
+              );
+              setDocuments(resDocs.data);
+
+              const resAct = await axios.get(
+                `http://127.0.0.1:8000/api/groups/${group.id}/activity`,
+                { headers: { Authorization: `Bearer ${token}` } },
+              );
+              setActivities(resAct.data);
+            } catch (err) {
+              console.error("Could not enter War Room:", err);
+            }
+          };
+          fetchGroupData();
+        } else if (!group) {
+          navigate("/dashboard");
+        }
+      }
+    } else {
+      if (viewMode !== "personal") {
+        setViewMode("personal");
+        setActiveGroup(null);
+        fetchDocuments();
+      }
+    }
+  }, [groupId, groups]);
 
   const fetchGroups = async () => {
     const token = localStorage.getItem("token");
@@ -390,34 +437,11 @@ const Dashboard = () => {
   };
 
   const switchToPersonal = () => {
-    setViewMode("personal");
-    setActiveGroup(null);
-    fetchDocuments();
+    navigate("/dashboard");
   };
 
   const switchToGroup = async (group) => {
-    setViewMode("group");
-    setActiveGroup(group);
-    const token = localStorage.getItem("token");
-    try {
-      const resDocs = await axios.get(
-        `http://127.0.0.1:8000/api/groups/${group.id}/documents`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      setDocuments(resDocs.data);
-
-      const resAct = await axios.get(
-        `http://127.0.0.1:8000/api/groups/${group.id}/activity`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      setActivities(resAct.data);
-    } catch (err) {
-      console.error("Could not enter War Room:", err);
-    }
+    navigate(`/dashboard/group/${group.id}`);
   };
 
   const promptShare = (doc) => {
