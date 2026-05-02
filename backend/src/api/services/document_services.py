@@ -72,12 +72,12 @@ def delete_document_service(db: Session, public_id: str):
 def update_document_status_service(db: Session, public_id: str, status: str):
     return update_document_status(db=db, public_id=public_id, status=status)
 
-def check_and_update_guest_limit(db: Session, identifier: str):
+def check_and_update_guest_limit(db: Session, identifier: str, increment_count: bool = True):
     usage = db.query(GuestUsage).filter(GuestUsage.identifier == identifier).first()
     now = datetime.now(timezone.utc)
 
     if not usage:
-        new_usage = GuestUsage(identifier=identifier, count=1, last_reset=now)
+        new_usage = GuestUsage(identifier=identifier, count=1 if increment_count else 0, last_reset=now)
         db.add(new_usage)
         db.commit()
         return True, "Success"
@@ -88,7 +88,7 @@ def check_and_update_guest_limit(db: Session, identifier: str):
         last_reset = last_reset.replace(tzinfo=timezone.utc)
         
     if now - last_reset > timedelta(days=1):
-        usage.count = 1
+        usage.count = 1 if increment_count else 0
         usage.last_reset = now
         db.commit()
         return True, "Success"
@@ -96,6 +96,8 @@ def check_and_update_guest_limit(db: Session, identifier: str):
     if usage.count >= 2:
         return False, "Daily limit reached. Wait 24h or Register to save your scrolls."
 
-    usage.count += 1
-    db.commit()
+    if increment_count:
+        usage.count += 1
+        db.commit()
+        
     return True, "Success"

@@ -22,7 +22,7 @@ def extract_text_from_file(file_path: str) -> str:
                     
         elif ext == 'docx':
             doc = docx.Document(file_path)
-            text = "\n".join([para.text for para in doc.paragraphs])
+            text = "\n".join([parag.text for parag in doc.paragraphs])
             
         elif ext == 'txt':
             with open(file_path, "rb") as f:

@@ -65,7 +65,7 @@ async def create_document_endpoint(
     
     if current_user is None:
         identifier = request.client.host
-        is_allowed, message = check_and_update_guest_limit(db, identifier)
+        is_allowed, message = check_and_update_guest_limit(db, identifier, increment_count=False)
         
         if not is_allowed:
             raise HTTPException(status_code=403, detail=message)

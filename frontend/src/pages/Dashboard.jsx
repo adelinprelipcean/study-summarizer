@@ -944,24 +944,24 @@ const Dashboard = () => {
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-start justify-between">
+                        <div className="flex items-start justify-between gap-2">
                           <div
-                            className="flex-1 pr-4 cursor-pointer"
+                            className="min-w-0 flex-1 pr-2 cursor-pointer"
                             onClick={() => {
                               setEditingId(doc.public_id);
                               setTempTitle(doc.title);
                             }}
                           >
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white break-words">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-2 break-all leading-snug">
                               {doc.title}
                             </h3>
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <p className="text-[10px] text-gray-400 uppercase tracking-widest">
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              <p className="text-[10px] text-gray-400 uppercase tracking-widest truncate max-w-[120px]">
                                 Ref: {doc.public_id}
                               </p>
 
                               {doc.summary && (
-                                <span className="px-2 py-0.5 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md text-[8px] font-black uppercase tracking-widest text-samurai-gold">
+                                <span className="px-2 py-0.5 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md text-[8px] font-black uppercase tracking-widest text-samurai-gold shrink-0">
                                   {doc.summary_type === "detailed"
                                     ? "Detailed"
                                     : "Simple"}
@@ -974,7 +974,7 @@ const Dashboard = () => {
                           </div>
 
                           {/* Share & Delete*/}
-                          <div className="flex gap-1 transition-opacity">
+                          <div className="flex gap-1 transition-opacity flex-shrink-0">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1269,13 +1269,6 @@ const Dashboard = () => {
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    promptShare(doc);
-                  }}
-                  className="text-gray-400 hover:text-samurai-gold hover:scale-125 transition-all p-2"
-                ></button>
                 <button
                   onClick={executeDelete}
                   className="flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
