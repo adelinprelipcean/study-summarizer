@@ -29,6 +29,8 @@ const AdminDashboard = () => {
   const [isBanModalOpen, setIsBanModalOpen] = useState(false);
   const [userToBan, setUserToBan] = useState(null);
   const [banReason, setBanReason] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -41,8 +43,9 @@ const AdminDashboard = () => {
       });
       setUsers(res.data);
     } catch (err) {
-      alert("Unauthorized Access, Warrior.");
-      navigate("/dashboard");
+      setErrorMessage("Unauthorized Access, Warrior.");
+      setIsErrorModalOpen(true);
+      setTimeout(() => navigate("/dashboard"), 1500);
     } finally {
       setLoading(false);
     }
@@ -61,7 +64,8 @@ const AdminDashboard = () => {
       setIsModalOpen(true);
     } catch (error) {
       console.error("Error fetching documents:", error.response?.data || error);
-      alert("Failed to load insights. Check console.");
+      setErrorMessage("Failed to load insights. Check console.");
+      setIsErrorModalOpen(true);
     }
   };
 
@@ -79,7 +83,8 @@ const AdminDashboard = () => {
       if (updatedDocs.length === 0) setIsModalOpen(false);
       fetchUsers();
     } catch (err) {
-      alert("Failed to mark document as safe.");
+      setErrorMessage("Failed to mark document as safe.");
+      setIsErrorModalOpen(true);
     }
   };
 
@@ -104,7 +109,8 @@ const AdminDashboard = () => {
       setUserToBan(null);
       fetchUsers();
     } catch (err) {
-      alert(err.response?.data?.detail || "Action failed.");
+      setErrorMessage(err.response?.data?.detail || "Action failed.");
+      setIsErrorModalOpen(true);
     }
   };
 
@@ -451,6 +457,43 @@ const AdminDashboard = () => {
                   Suspend
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Error Modal */}
+      <AnimatePresence>
+        {isErrorModalOpen && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsErrorModalOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-[#121214] border border-red-500/30 w-full max-w-sm p-8 rounded-[2.5rem] relative z-10 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShieldAlert className="text-red-500" size={32} />
+              </div>
+              <h3 className="text-xl font-black uppercase tracking-tighter mb-2 text-red-500">
+                Action Failed
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
+                {errorMessage}
+              </p>
+              <button
+                onClick={() => setIsErrorModalOpen(false)}
+                className="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest bg-gray-900 dark:bg-white/5 text-white hover:bg-black transition-colors"
+              >
+                Understood
+              </button>
             </motion.div>
           </div>
         )}

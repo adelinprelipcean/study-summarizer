@@ -8,7 +8,7 @@ import ThemeToggle from "../components/ThemeToggle";
 const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const navigate = useNavigate();
-  const [banInfo, setBanInfo] = useState({ show: false, reason: "" });
+  const [feedback, setFeedback] = useState({ show: false, message: "", type: "" });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,12 +30,17 @@ const Login = () => {
         status === 403 ||
         (detail && detail.toLowerCase().includes("suspended"))
       ) {
-        setBanInfo({
+        setFeedback({
           show: true,
-          reason: detail || "Your access has been revoked.",
+          message: detail || "Your access has been revoked.",
+          type: "ban",
         });
       } else {
-        alert("Invalid credentials, warrior.");
+        setFeedback({
+          show: true,
+          message: "Invalid credentials, warrior.",
+          type: "error",
+        });
       }
     }
   };
@@ -117,36 +122,43 @@ const Login = () => {
         </div>
       </motion.div>
 
-      {/* Ban message box */}
+      {/* Feedback Modal */}
       <AnimatePresence>
-        {banInfo.show && (
+        {feedback.show && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              onClick={() => setFeedback({ ...feedback, show: false })}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
             />
+
+            {/* Message box */}
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white dark:bg-[#121214] border border-red-500/30 w-full max-w-sm p-8 rounded-[2.5rem] relative z-10 shadow-2xl text-center"
+              initial={{ scale: 0.8, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 20 }}
+              className={`w-full max-w-sm p-8 rounded-[2.5rem] relative z-10 shadow-2xl text-center border bg-white dark:bg-[#121214] border-red-500/30`}
             >
-              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500/10">
                 <ShieldCheck className="text-red-500" size={32} />
               </div>
+
               <h3 className="text-xl font-black uppercase tracking-tighter mb-2 text-red-500">
-                You have been banned
+                {feedback.type === "ban" ? "You have been banned" : "Access Denied"}
               </h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
-                {banInfo.reason}
+
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
+                {feedback.message}
               </p>
+
               <button
-                onClick={() => setBanInfo({ ...banInfo, show: false })}
-                className="w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest bg-red-500 text-white hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
+                onClick={() => setFeedback({ ...feedback, show: false })}
+                className="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest bg-gray-900 dark:bg-white/5 text-white hover:bg-black transition-colors"
               >
-                I understand
+                {feedback.type === "ban" ? "I understand" : "Try Again"}
               </button>
             </motion.div>
           </div>

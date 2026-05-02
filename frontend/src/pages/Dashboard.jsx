@@ -16,6 +16,8 @@ import {
   Check,
   Plus,
   ShieldAlert,
+  Download,
+  FileDown,
 } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -57,6 +59,7 @@ const Dashboard = () => {
   const [groupToDelete, setGroupToDelete] = useState(null);
   const [shareToRemove, setShareToRemove] = useState(null);
   const [groupToLeave, setGroupToLeave] = useState(null);
+  const [downloadDoc, setDownloadDoc] = useState(null); // doc to download
 
   const getCurrentUserId = () => {
     const token = localStorage.getItem("token");
@@ -122,7 +125,8 @@ const Dashboard = () => {
     } catch (err) {
       const errorMessage =
         err.response?.data?.detail || "The spirits are restless.";
-      alert(errorMessage);
+      setErrorMessage(errorMessage);
+      setIsErrorModalOpen(true);
     } finally {
       setLoadingId(null);
     }
@@ -197,9 +201,8 @@ const Dashboard = () => {
       }
     } catch (err) {
       console.error("Upload error:", err);
-      alert(
-        "Too many attemps for today. Try again tomorrow or login to increase the limits.",
-      );
+      setErrorMessage("Too many attempts for today. Try again tomorrow or login to increase the limits.");
+      setIsErrorModalOpen(true);
     } finally {
       setIsUploading(false);
       e.target.value = null;
@@ -241,7 +244,8 @@ const Dashboard = () => {
           ),
         );
       } else {
-        alert("The scroll resists change. Rename failed.");
+        setErrorMessage("The scroll resists change. Rename failed.");
+        setIsErrorModalOpen(true);
       }
     } finally {
       setEditingId(null);
@@ -263,7 +267,8 @@ const Dashboard = () => {
       }
       setDocuments((prev) => prev.filter((d) => d.public_id !== publicId));
     } catch (err) {
-      alert("The scroll resists destruction.");
+      setErrorMessage("The scroll resists destruction.");
+      setIsErrorModalOpen(true);
     } finally {
       setDeleteConfirmId(null);
     }
@@ -359,7 +364,8 @@ const Dashboard = () => {
       setNewGroupName("");
       setNewGroupDesc("");
     } catch (err) {
-      alert("The War Room could not be established.");
+      setErrorMessage("The War Room could not be established.");
+      setIsErrorModalOpen(true);
     }
   };
 
@@ -378,7 +384,8 @@ const Dashboard = () => {
       setGroups((prev) => prev.filter((g) => g.id !== activeGroup.id));
       switchToPersonal();
     } catch (err) {
-      alert("The spirits refuse to dismantle this chamber.");
+      setErrorMessage("The spirits refuse to dismantle this chamber.");
+      setIsErrorModalOpen(true);
     }
   };
 
@@ -505,7 +512,8 @@ const Dashboard = () => {
       );
       setActivities((prev) => prev.filter((act) => act.id !== activityId));
     } catch (err) {
-      alert(err.response?.data?.detail || "Failed to remove scroll");
+      setErrorMessage(err.response?.data?.detail || "Failed to remove scroll");
+      setIsErrorModalOpen(true);
     }
   };
 
@@ -973,7 +981,7 @@ const Dashboard = () => {
                             </span>
                           </div>
 
-                          {/* Share & Delete*/}
+                          {/* Share, Download & Delete*/}
                           <div className="flex gap-1 transition-opacity flex-shrink-0">
                             <button
                               onClick={(e) => {
@@ -984,6 +992,16 @@ const Dashboard = () => {
                               title="Share to War Room"
                             >
                               <Share2 size={18} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDownloadDoc(doc);
+                              }}
+                              className="text-gray-400 hover:text-blue-400 transition-all p-2 hover:bg-blue-400/10 rounded-lg"
+                              title="Download"
+                            >
+                              <Download size={18} />
                             </button>
                             <button
                               onClick={(e) => {
@@ -1676,6 +1694,117 @@ const Dashboard = () => {
                   Leave
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Download Modal ─────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {downloadDoc && (
+          <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDownloadDoc(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="relative z-10 bg-white dark:bg-[#0e0e0f] border border-white/10 w-full max-w-sm p-8 rounded-[2rem] shadow-2xl"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-black uppercase tracking-tighter dark:text-white">
+                    Download Scroll
+                  </h3>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-0.5 line-clamp-1">
+                    {downloadDoc.title}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setDownloadDoc(null)}
+                  className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Gold divider */}
+              <div className="h-px w-full bg-gradient-to-r from-transparent via-samurai-gold/40 to-transparent mb-6" />
+
+              {/* Options */}
+              <div className="space-y-3">
+                {/* Original Document */}
+                <a
+                  href={`http://127.0.0.1:8000/api/documents/${downloadDoc.public_id}/download-original`}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setDownloadDoc(null)}
+                  className="group flex items-center gap-4 w-full p-4 rounded-2xl border border-gray-200 dark:border-white/10 hover:border-samurai-gold/50 hover:bg-samurai-gold/5 transition-all duration-300"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center group-hover:bg-samurai-gold/10 transition-colors shrink-0">
+                    <FileDown size={20} className="text-samurai-gold" />
+                  </div>
+                  <div className="text-left min-w-0">
+                    <p className="font-black text-sm dark:text-white uppercase tracking-tight">
+                      Original Document
+                    </p>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-widest">
+                      {downloadDoc.filetype?.toUpperCase()} · Raw file
+                    </p>
+                  </div>
+                  <Download size={14} className="ml-auto text-gray-400 group-hover:text-samurai-gold transition-colors shrink-0" />
+                </a>
+
+                {/* Summarized PDF */}
+                {downloadDoc.summary ? (
+                  <a
+                    href={`http://127.0.0.1:8000/api/documents/${downloadDoc.public_id}/download-summary`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => setDownloadDoc(null)}
+                    className="group flex items-center gap-4 w-full p-4 rounded-2xl border border-gray-200 dark:border-white/10 hover:border-samurai-gold/50 hover:bg-samurai-gold/5 transition-all duration-300"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center group-hover:bg-samurai-gold/10 transition-colors shrink-0">
+                      <BrainCircuit size={20} className="text-samurai-gold" />
+                    </div>
+                    <div className="text-left min-w-0">
+                      <p className="font-black text-sm dark:text-white uppercase tracking-tight">
+                        Summarized Content
+                      </p>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-widest">
+                        PDF · AI-generated insight
+                      </p>
+                    </div>
+                    <Download size={14} className="ml-auto text-gray-400 group-hover:text-samurai-gold transition-colors shrink-0" />
+                  </a>
+                ) : (
+                  <div className="flex items-center gap-4 w-full p-4 rounded-2xl border border-dashed border-gray-200 dark:border-white/5 opacity-40 cursor-not-allowed">
+                    <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center shrink-0">
+                      <BrainCircuit size={20} className="text-gray-400" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-black text-sm dark:text-white uppercase tracking-tight">
+                        Summarized Content
+                      </p>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-widest">
+                        Summon AI Insight first
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer note */}
+              <p className="mt-6 text-center text-[9px] text-gray-500 uppercase tracking-widest">
+                Files are served securely from the archive
+              </p>
             </motion.div>
           </div>
         )}
