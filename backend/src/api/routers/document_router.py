@@ -491,9 +491,9 @@ def download_summary_pdf(
     pdf.add_page()
 
     # ── Summary body ──────────────────────────────────────────────────────
-    # A larger font size and a darker text color give a "bolder" and more solid feel.
-    pdf.set_font(unicode_font, "B", 11.5)
-    pdf.set_text_color(20, 20, 20)
+    # A modern, clean, and breathable text style without bolding.
+    pdf.set_font(unicode_font, "", 11.5)
+    pdf.set_text_color(45, 45, 48)  # Softer dark gray for an elegant look
     pdf.set_line_width(0.2)
 
     # Adding a bit of initial padding before the text starts

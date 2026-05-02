@@ -24,8 +24,14 @@ from src.models.guest_usage import GuestUsage
 from src.core.config import settings
 
 def create_document_service(db: Session, file: UploadFile, title: str, owner_id: int):
-    count = db.query(Document).count()
-    public_id = f"D{count + 1}"
+    import re
+    existing_ids = [d.public_id for d in db.query(Document.public_id).all()]
+    max_num = 0
+    for pid in existing_ids:
+        match = re.match(r"^D(\d+)$", pid)
+        if match:
+            max_num = max(max_num, int(match.group(1)))
+    public_id = f"D{max_num + 1}"
     
     ext = file.filename.split('.')[-1].lower() if '.' in file.filename else 'other'
     if ext not in ['pdf', 'docx', 'txt']:

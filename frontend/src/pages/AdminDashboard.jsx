@@ -31,6 +31,7 @@ const AdminDashboard = () => {
   const [banReason, setBanReason] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+  const [banReasonToShow, setBanReasonToShow] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -111,6 +112,15 @@ const AdminDashboard = () => {
     } catch (err) {
       setErrorMessage(err.response?.data?.detail || "Action failed.");
       setIsErrorModalOpen(true);
+    }
+  };
+
+  const handleViewBanReason = (user) => {
+    if (user.is_banned) {
+      setBanReasonToShow({
+        username: user.username,
+        reason: user.ban_reason || "No specific reason provided."
+      });
     }
   };
 
@@ -247,11 +257,13 @@ const AdminDashboard = () => {
                   </td>
 
                   <td className="p-6 w-32 text-center">
-                    <span
-                      className={`inline-block w-full px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-center ${user.is_banned ? "bg-red-500/10 text-red-500" : "bg-green-500/10 text-green-500"}`}
+                    <button
+                      disabled={!user.is_banned}
+                      onClick={() => handleViewBanReason(user)}
+                      className={`inline-block w-full px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-center transition-all ${user.is_banned ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 cursor-pointer" : "bg-green-500/10 text-green-500 cursor-default"}`}
                     >
                       {user.is_banned ? "Suspended" : "Active"}
-                    </span>
+                    </button>
                   </td>
 
                   <td className="p-6 w-24 text-right">
@@ -312,11 +324,13 @@ const AdminDashboard = () => {
 
               {/* Badges */}
               <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100 dark:border-white/5">
-                <span
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center ${user.is_banned ? "bg-red-500/10 text-red-500" : "bg-green-500/10 text-green-500"}`}
+                <button
+                  disabled={!user.is_banned}
+                  onClick={() => handleViewBanReason(user)}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center transition-all ${user.is_banned ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 cursor-pointer" : "bg-green-500/10 text-green-500 cursor-default"}`}
                 >
                   {user.is_banned ? "Suspended" : "Active"}
-                </span>
+                </button>
 
                 {user.has_dangerous_docs ? (
                   <button
@@ -493,6 +507,48 @@ const AdminDashboard = () => {
                 className="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest bg-gray-900 dark:bg-white/5 text-white hover:bg-black transition-colors"
               >
                 Understood
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Suspension Details Modal */}
+      <AnimatePresence>
+        {banReasonToShow && (
+          <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setBanReasonToShow(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-[#121214] border border-red-500/30 w-full max-w-sm p-8 rounded-[2.5rem] relative z-10 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShieldAlert className="text-red-500" size={32} />
+              </div>
+              <h3 className="text-xl font-black uppercase tracking-tighter mb-2 text-red-500">
+                User Suspended
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-widest font-bold">
+                @{banReasonToShow.username}
+              </p>
+              <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-4 mb-6 text-sm text-gray-700 dark:text-gray-300 min-h-[80px] flex items-center justify-center">
+                <p className="leading-relaxed">
+                  {banReasonToShow.reason}
+                </p>
+              </div>
+              <button
+                onClick={() => setBanReasonToShow(null)}
+                className="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest bg-gray-900 dark:bg-white/5 text-white hover:bg-black transition-colors"
+              >
+                Close
               </button>
             </motion.div>
           </div>

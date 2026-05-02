@@ -31,6 +31,9 @@ def toggle_user_ban(
     db: Session = Depends(get_db),
     current_admin: User = Depends(get_current_admin)
 ):
+    import os
+    from src.core.config import settings
+
     target_user = db.query(User).filter(User.id == target_user_id).first()
     
     if not target_user:
@@ -42,6 +45,23 @@ def toggle_user_ban(
     target_user.is_banned = not target_user.is_banned
     target_user.ban_reason = request.reason if target_user.is_banned else None
     
+    if target_user.is_banned:
+        # Delete dangerous documents owned by this user
+        dangerous_docs = db.query(Document).filter(
+            Document.owner_id == target_user_id,
+            Document.is_dangerous == True
+        ).all()
+        
+        for doc in dangerous_docs:
+            for ext in [doc.filetype, "pdf", "docx", "txt"]:
+                file_path = os.path.join(settings.UPLOAD_DIR, f"{doc.public_id}.{ext}")
+                if os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                    except Exception:
+                        pass
+            db.delete(doc)
+
     db.commit()
     
     status_msg = "banned" if target_user.is_banned else "unbanned"
@@ -70,12 +90,32 @@ def ban_user(
     db: Session = Depends(get_db),
     current_admin: User = Depends(get_current_admin)
 ):
+    import os
+    from src.core.config import settings
+
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
     user.is_banned = True
     user.ban_reason = request.reason
+
+    # Delete dangerous documents owned by this user
+    dangerous_docs = db.query(Document).filter(
+        Document.owner_id == user_id,
+        Document.is_dangerous == True
+    ).all()
+    
+    for doc in dangerous_docs:
+        for ext in [doc.filetype, "pdf", "docx", "txt"]:
+            file_path = os.path.join(settings.UPLOAD_DIR, f"{doc.public_id}.{ext}")
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception:
+                    pass
+        db.delete(doc)
+
     db.commit()
     return {"message": f"User {user.username} has been banned"}
 

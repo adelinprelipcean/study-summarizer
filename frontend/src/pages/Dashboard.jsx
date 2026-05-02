@@ -60,7 +60,10 @@ const Dashboard = () => {
   const [groupToDelete, setGroupToDelete] = useState(null);
   const [shareToRemove, setShareToRemove] = useState(null);
   const [groupToLeave, setGroupToLeave] = useState(null);
-  const [downloadDoc, setDownloadDoc] = useState(null); // doc to download
+  const [downloadDoc, setDownloadDoc] = useState(null); 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   const getCurrentUserId = () => {
     const token = localStorage.getItem("token");
@@ -202,7 +205,13 @@ const Dashboard = () => {
       }
     } catch (err) {
       console.error("Upload error:", err);
-      setErrorMessage("Too many attempts for today. Try again tomorrow or login to increase the limits.");
+      if (err.response && err.response.data && err.response.data.detail) {
+        setErrorMessage(err.response.data.detail);
+      } else if (!token) {
+        setErrorMessage("Too many attempts for today. Try again tomorrow or login to increase the limits.");
+      } else {
+        setErrorMessage("Upload failed. Ensure the file is not too large and try again.");
+      }
       setIsErrorModalOpen(true);
     } finally {
       setIsUploading(false);
@@ -437,10 +446,12 @@ const Dashboard = () => {
   };
 
   const switchToPersonal = () => {
+    setSearchQuery("");
     navigate("/dashboard");
   };
 
   const switchToGroup = async (group) => {
+    setSearchQuery("");
     navigate(`/dashboard/group/${group.id}`);
   };
 
@@ -936,162 +947,220 @@ const Dashboard = () => {
             </div>
           )}
 
+          {/* Search Bar */}
+          {viewMode === "personal" ? (
+            <div className="mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="relative w-full max-w-md">
+                <input
+                  type="text"
+                  placeholder="Search scrolls by name..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/5 rounded-2xl px-5 py-3.5 text-sm outline-none focus:border-samurai-gold/40 transition-all text-gray-900 dark:text-gray-100 placeholder-gray-400"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="relative w-full max-w-md">
+                <input
+                  type="text"
+                  placeholder="Search shared scrolls..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/5 rounded-2xl px-5 py-3.5 text-sm outline-none focus:border-samurai-gold/40 transition-all text-gray-900 dark:text-gray-100 placeholder-gray-400"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Grid Container & Activity Log Area */}
           <div className="pb-20">
             {viewMode === "personal" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {isGuest && documents.length === 0 && (
-                  <div className="col-span-full py-10 flex flex-col items-center opacity-40">
-                    <BrainCircuit size={48} className="mb-4 text-gray-400" />
-                    <p className="text-center font-medium uppercase tracking-widest text-sm">
-                      No scrolls discovered yet
-                    </p>
-                  </div>
-                )}
-                {documents.map((doc) => (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    key={doc.public_id}
-                    className="bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/5 p-6 rounded-[2rem] shadow-xl flex flex-col justify-between hover:border-samurai-gold/30 transition-all"
-                  >
-                    <div className="mb-6 group relative">
-                      {editingId === doc.public_id ? (
-                        <div className="flex items-center gap-2 border-b-2 border-samurai-gold py-1">
-                          <input
-                            autoFocus
-                            className="bg-transparent outline-none flex-1 text-lg font-bold text-gray-900 dark:text-gray-100"
-                            value={tempTitle}
-                            onChange={(e) => setTempTitle(e.target.value)}
-                            onBlur={() => handleRename(doc.public_id)}
-                            onKeyDown={(e) =>
-                              e.key === "Enter" && handleRename(doc.public_id)
-                            }
-                          />
-                          <button
-                            onClick={() => handleRename(doc.public_id)}
-                            className="text-samurai-gold hover:scale-125 active:scale-90 transition-all p-1"
-                          >
-                            <Check size={20} strokeWidth={3} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-start justify-between gap-2">
-                          <div
-                            className="min-w-0 flex-1 pr-2 cursor-pointer"
-                            onClick={() => {
-                              setEditingId(doc.public_id);
-                              setTempTitle(doc.title);
-                            }}
-                          >
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-2 break-all leading-snug">
-                              {doc.title}
-                            </h3>
-                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                              <p className="text-[10px] text-gray-400 uppercase tracking-widest truncate max-w-[120px]">
-                                Ref: {doc.public_id}
-                              </p>
-
-                              {doc.summary && (
-                                <span className="px-2 py-0.5 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md text-[8px] font-black uppercase tracking-widest text-samurai-gold shrink-0">
-                                  {doc.summary_type === "detailed"
-                                    ? "Detailed"
-                                    : "Simple"}
-                                </span>
-                              )}
-                            </div>
-                            <span className="opacity-0 group-hover:opacity-100 text-[10px] text-samurai-gold font-bold uppercase tracking-tighter transition-opacity absolute -bottom-4 left-0">
-                              Click title to edit
-                            </span>
+              <div className="bg-white dark:bg-[#121214] border border-samurai-gold/20 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {documents.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                    <div className="col-span-full py-10 flex flex-col items-center opacity-40">
+                      <BrainCircuit size={48} className="mb-4 text-gray-400" />
+                      <p className="text-center font-medium uppercase tracking-widest text-sm">
+                        {documents.length === 0 ? "No scrolls discovered yet" : "No matching scrolls found"}
+                      </p>
+                    </div>
+                  )}
+                  {documents
+                    .filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((doc) => (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      key={doc.public_id}
+                      className="bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/5 p-6 rounded-[2rem] shadow-xl flex flex-col justify-between hover:border-samurai-gold/30 transition-all"
+                    >
+                      <div className="mb-6 group relative">
+                        {editingId === doc.public_id ? (
+                          <div className="flex items-center justify-between gap-2 border-b-2 border-samurai-gold py-1">
+                            <input
+                              autoFocus
+                              className="bg-transparent outline-none min-w-0 flex-1 text-lg font-bold text-gray-900 dark:text-gray-100"
+                              value={tempTitle}
+                              onChange={(e) => setTempTitle(e.target.value)}
+                              onBlur={() => handleRename(doc.public_id)}
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && handleRename(doc.public_id)
+                              }
+                            />
+                            <button
+                              onClick={() => handleRename(doc.public_id)}
+                              className="text-samurai-gold hover:scale-125 active:scale-90 transition-all p-1 shrink-0"
+                            >
+                              <Check size={20} strokeWidth={3} />
+                            </button>
                           </div>
+                        ) : (
+                          <div className="flex items-start justify-between gap-2">
+                            <div
+                              className="min-w-0 flex-1 pr-2 cursor-pointer"
+                              onClick={() => {
+                                setEditingId(doc.public_id);
+                                setTempTitle(doc.title);
+                              }}
+                            >
+                              <h3 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-2 break-all leading-snug">
+                                {doc.title}
+                              </h3>
+                              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                <p className="text-[10px] text-gray-400 uppercase tracking-widest truncate max-w-[120px]">
+                                  Ref: {doc.public_id}
+                                </p>
 
-                          {/* Share, Download & Delete*/}
-                          <div className="flex gap-1 transition-opacity flex-shrink-0">
+                                {doc.summary && (
+                                  <span className="px-2 py-0.5 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md text-[8px] font-black uppercase tracking-widest text-samurai-gold shrink-0">
+                                    {doc.summary_type === "detailed"
+                                      ? "Detailed"
+                                      : "Simple"}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="opacity-0 group-hover:opacity-100 text-[10px] text-samurai-gold font-bold uppercase tracking-tighter transition-opacity absolute -bottom-4 left-0">
+                                Click title to edit
+                              </span>
+                            </div>
+
+                            {/* Share, Download & Delete*/}
+                            <div className="flex gap-1 transition-opacity flex-shrink-0">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  promptShare(doc);
+                                }}
+                                className="text-gray-400 hover:text-samurai-gold transition-all p-2 hover:bg-samurai-gold/10 rounded-lg"
+                                title="Share to War Room"
+                              >
+                                <Share2 size={18} />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDownloadDoc(doc);
+                                }}
+                                className="text-gray-400 hover:text-blue-400 transition-all p-2 hover:bg-blue-400/10 rounded-lg"
+                                title="Download"
+                              >
+                                <Download size={18} />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  promptDelete(doc.public_id);
+                                }}
+                                className="text-gray-400 hover:text-red-500 transition-all p-2 hover:bg-red-500/10 rounded-lg"
+                                title="Destroy Scroll"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {!isGuest && !doc.summary && (
+                        <div className="mb-4 mt-auto">
+                          <div className="flex bg-gray-100 dark:bg-[#1a1a1c] p-1.5 rounded-[1rem] border border-gray-200 dark:border-white/5 shadow-inner">
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                promptShare(doc);
-                              }}
-                              className="text-gray-400 hover:text-samurai-gold transition-all p-2 hover:bg-samurai-gold/10 rounded-lg"
-                              title="Share to War Room"
+                              onClick={() =>
+                                setSummaryTypes((prev) => ({
+                                  ...prev,
+                                  [doc.public_id]: "Simple",
+                                }))
+                              }
+                              className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                                (summaryTypes[doc.public_id] || "Simple") ===
+                                "Simple"
+                                  ? "bg-white dark:bg-white/10 text-samurai-gold shadow-sm"
+                                  : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                              }`}
                             >
-                              <Share2 size={18} />
+                              Simple
                             </button>
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDownloadDoc(doc);
-                              }}
-                              className="text-gray-400 hover:text-blue-400 transition-all p-2 hover:bg-blue-400/10 rounded-lg"
-                              title="Download"
+                              onClick={() =>
+                                setSummaryTypes((prev) => ({
+                                  ...prev,
+                                  [doc.public_id]: "detailed",
+                                }))
+                              }
+                              className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                                summaryTypes[doc.public_id] === "detailed"
+                                  ? "bg-white dark:bg-white/10 text-samurai-gold shadow-sm"
+                                  : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                              }`}
                             >
-                              <Download size={18} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                promptDelete(doc.public_id);
-                              }}
-                              className="text-gray-400 hover:text-red-500 transition-all p-2 hover:bg-red-500/10 rounded-lg"
-                              title="Destroy Scroll"
-                            >
-                              <Trash2 size={18} />
+                              Detailed
                             </button>
                           </div>
                         </div>
                       )}
-                    </div>
+                      <button
+                        onClick={() => handleSummarize(doc.public_id)}
+                        disabled={loadingId !== null}
+                        className="w-full bg-samurai-gold text-white dark:text-black py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-samurai-gold/10"
+                      >
+                        {loadingId === doc.public_id
+                          ? "Channeling AI..."
+                          : doc.summary
+                            ? "View Insight"
+                            : "Summon AI Insight"}
+                      </button>
+                    </motion.div>
+                  ))}
 
-                    {!isGuest && !doc.summary && (
-                      <div className="mb-4 mt-auto">
-                        <div className="flex bg-gray-100 dark:bg-[#1a1a1c] p-1.5 rounded-[1rem] border border-gray-200 dark:border-white/5 shadow-inner">
-                          <button
-                            onClick={() =>
-                              setSummaryTypes((prev) => ({
-                                ...prev,
-                                [doc.public_id]: "Simple",
-                              }))
-                            }
-                            className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                              (summaryTypes[doc.public_id] || "Simple") ===
-                              "Simple"
-                                ? "bg-white dark:bg-white/10 text-samurai-gold shadow-sm"
-                                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                            }`}
-                          >
-                            Simple
-                          </button>
-                          <button
-                            onClick={() =>
-                              setSummaryTypes((prev) => ({
-                                ...prev,
-                                [doc.public_id]: "detailed",
-                              }))
-                            }
-                            className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                              summaryTypes[doc.public_id] === "detailed"
-                                ? "bg-white dark:bg-white/10 text-samurai-gold shadow-sm"
-                                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                            }`}
-                          >
-                            Detailed
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    <button
-                      onClick={() => handleSummarize(doc.public_id)}
-                      disabled={loadingId !== null}
-                      className="w-full bg-samurai-gold text-white dark:text-black py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-samurai-gold/10"
-                    >
-                      {loadingId === doc.public_id
-                        ? "Channeling AI..."
-                        : doc.summary
-                          ? "View Insight"
-                          : "Summon AI Insight"}
-                    </button>
-                  </motion.div>
-                ))}
+                  {/* Pagination Controls */}
+                  {viewMode === "personal" && documents.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase())).length > itemsPerPage && (
+                    <div className="col-span-full mt-8 flex justify-center items-center gap-4">
+                      <button
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        className="px-4 py-2 border border-gray-200 dark:border-white/10 text-xs font-bold uppercase rounded-xl hover:border-samurai-gold/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white/5 text-gray-800 dark:text-gray-200 hover:bg-white/10"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                        Page {currentPage} of {Math.ceil(documents.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase())).length / itemsPerPage)}
+                      </span>
+                      <button
+                        disabled={currentPage === Math.ceil(documents.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase())).length / itemsPerPage)}
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(documents.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase())).length / itemsPerPage)))}
+                        className="px-4 py-2 border border-gray-200 dark:border-white/10 text-xs font-bold uppercase rounded-xl hover:border-samurai-gold/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white/5 text-gray-800 dark:text-gray-200 hover:bg-white/10"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <motion.div
@@ -1102,8 +1171,8 @@ const Dashboard = () => {
                 <div className="bg-white dark:bg-[#121214] border border-samurai-gold/20 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
                   {/* Cards Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {activities.length > 0 ? (
-                      activities.map((act) => {
+                    {activities.filter(act => act.document_title.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 ? (
+                      activities.filter(act => act.document_title.toLowerCase().includes(searchQuery.toLowerCase())).map((act) => {
                         const isMe =
                           currentUser &&
                           String(act.user_id) === String(currentUser.id);
@@ -1126,6 +1195,28 @@ const Dashboard = () => {
 
                               {/* Trash button and Time box */}
                               <div className="flex items-center gap-2">
+                                {/* Download button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const matchedDoc = documents.find(d => d.public_id === act.document_public_id);
+                                    if (matchedDoc) {
+                                      setDownloadDoc(matchedDoc);
+                                    } else {
+                                      setDownloadDoc({
+                                        public_id: act.document_public_id,
+                                        title: act.document_title,
+                                        summary: true,
+                                        filetype: "unknown"
+                                      });
+                                    }
+                                  }}
+                                  className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
+                                  title="Download Scroll"
+                                >
+                                  <Download size={14} />
+                                </button>
+
                                 {/* Delete button */}
                                 {currentUser &&
                                   String(act.user_id) ===
@@ -1244,13 +1335,13 @@ const Dashboard = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               className="bg-white dark:bg-[#121214] border border-samurai-gold/30 w-full max-w-2xl p-8 rounded-[2.5rem] relative z-10 shadow-2xl"
             >
-              <div className="flex items-center justify-between mb-4 pr-12">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-black uppercase tracking-tighter text-samurai-gold">
                   Scroll Insight
                 </h2>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="text-gray-400 hover:text-samurai-gold transition-colors"
+                  className="absolute top-8 right-8 text-gray-400 hover:text-samurai-gold transition-colors p-1"
                 >
                   <X size={24} />
                 </button>
@@ -1743,17 +1834,17 @@ const Dashboard = () => {
             >
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
-                <div>
+                <div className="pr-10">
                   <h3 className="text-lg font-black uppercase tracking-tighter dark:text-white">
                     Download Scroll
                   </h3>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-0.5 line-clamp-1">
+                  <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-0.5 truncate max-w-[250px]">
                     {downloadDoc.title}
                   </p>
                 </div>
                 <button
                   onClick={() => setDownloadDoc(null)}
-                  className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+                  className="absolute top-6 right-6 p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
                 >
                   <X size={18} />
                 </button>
