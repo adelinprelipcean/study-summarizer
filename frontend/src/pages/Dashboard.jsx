@@ -60,7 +60,7 @@ const Dashboard = () => {
   const [groupToDelete, setGroupToDelete] = useState(null);
   const [shareToRemove, setShareToRemove] = useState(null);
   const [groupToLeave, setGroupToLeave] = useState(null);
-  const [downloadDoc, setDownloadDoc] = useState(null); 
+  const [downloadDoc, setDownloadDoc] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
@@ -208,9 +208,13 @@ const Dashboard = () => {
       if (err.response && err.response.data && err.response.data.detail) {
         setErrorMessage(err.response.data.detail);
       } else if (!token) {
-        setErrorMessage("Too many attempts for today. Try again tomorrow or login to increase the limits.");
+        setErrorMessage(
+          "Too many attempts for today. Try again tomorrow or login to increase the limits.",
+        );
       } else {
-        setErrorMessage("Upload failed. Ensure the file is not too large and try again.");
+        setErrorMessage(
+          "Upload failed. Ensure the file is not too large and try again.",
+        );
       }
       setIsErrorModalOpen(true);
     } finally {
@@ -654,7 +658,7 @@ const Dashboard = () => {
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
       `}
       >
-        <div className="p-8 relative">
+        <div className="p-8 relative flex-1 overflow-y-auto custom-scrollbar">
           <div className="flex justify-between items-center mb-12">
             <motion.button
               onClick={() => navigate("/")}
@@ -982,184 +986,228 @@ const Dashboard = () => {
             {viewMode === "personal" ? (
               <div className="bg-white dark:bg-[#121214] border border-samurai-gold/20 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {documents.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                  {documents.filter((d) =>
+                    d.title.toLowerCase().includes(searchQuery.toLowerCase()),
+                  ).length === 0 && (
                     <div className="col-span-full py-10 flex flex-col items-center opacity-40">
                       <BrainCircuit size={48} className="mb-4 text-gray-400" />
                       <p className="text-center font-medium uppercase tracking-widest text-sm">
-                        {documents.length === 0 ? "No scrolls discovered yet" : "No matching scrolls found"}
+                        {documents.length === 0
+                          ? "No scrolls discovered yet"
+                          : "No matching scrolls found"}
                       </p>
                     </div>
                   )}
                   {documents
-                    .filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase()))
-                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .filter((d) =>
+                      d.title.toLowerCase().includes(searchQuery.toLowerCase()),
+                    )
+                    .slice(
+                      (currentPage - 1) * itemsPerPage,
+                      currentPage * itemsPerPage,
+                    )
                     .map((doc) => (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      key={doc.public_id}
-                      className="bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/5 p-6 rounded-[2rem] shadow-xl flex flex-col justify-between hover:border-samurai-gold/30 transition-all"
-                    >
-                      <div className="mb-6 group relative">
-                        {editingId === doc.public_id ? (
-                          <div className="flex items-center justify-between gap-2 border-b-2 border-samurai-gold py-1">
-                            <input
-                              autoFocus
-                              className="bg-transparent outline-none min-w-0 flex-1 text-lg font-bold text-gray-900 dark:text-gray-100"
-                              value={tempTitle}
-                              onChange={(e) => setTempTitle(e.target.value)}
-                              onBlur={() => handleRename(doc.public_id)}
-                              onKeyDown={(e) =>
-                                e.key === "Enter" && handleRename(doc.public_id)
-                              }
-                            />
-                            <button
-                              onClick={() => handleRename(doc.public_id)}
-                              className="text-samurai-gold hover:scale-125 active:scale-90 transition-all p-1 shrink-0"
-                            >
-                              <Check size={20} strokeWidth={3} />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-start justify-between gap-2">
-                            <div
-                              className="min-w-0 flex-1 pr-2 cursor-pointer"
-                              onClick={() => {
-                                setEditingId(doc.public_id);
-                                setTempTitle(doc.title);
-                              }}
-                            >
-                              <h3 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-2 break-all leading-snug">
-                                {doc.title}
-                              </h3>
-                              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                <p className="text-[10px] text-gray-400 uppercase tracking-widest truncate max-w-[120px]">
-                                  Ref: {doc.public_id}
-                                </p>
-
-                                {doc.summary && (
-                                  <span className="px-2 py-0.5 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md text-[8px] font-black uppercase tracking-widest text-samurai-gold shrink-0">
-                                    {doc.summary_type === "detailed"
-                                      ? "Detailed"
-                                      : "Simple"}
-                                  </span>
-                                )}
-                              </div>
-                              <span className="opacity-0 group-hover:opacity-100 text-[10px] text-samurai-gold font-bold uppercase tracking-tighter transition-opacity absolute -bottom-4 left-0">
-                                Click title to edit
-                              </span>
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        key={doc.public_id}
+                        className="bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/5 p-6 rounded-[2rem] shadow-xl flex flex-col justify-between hover:border-samurai-gold/30 transition-all"
+                      >
+                        <div className="mb-6 group relative">
+                          {editingId === doc.public_id ? (
+                            <div className="flex items-center justify-between gap-2 border-b-2 border-samurai-gold py-1">
+                              <input
+                                autoFocus
+                                className="bg-transparent outline-none min-w-0 flex-1 text-lg font-bold text-gray-900 dark:text-gray-100"
+                                value={tempTitle}
+                                onChange={(e) => setTempTitle(e.target.value)}
+                                onBlur={() => handleRename(doc.public_id)}
+                                onKeyDown={(e) =>
+                                  e.key === "Enter" &&
+                                  handleRename(doc.public_id)
+                                }
+                              />
+                              <button
+                                onClick={() => handleRename(doc.public_id)}
+                                className="text-samurai-gold hover:scale-125 active:scale-90 transition-all p-1 shrink-0"
+                              >
+                                <Check size={20} strokeWidth={3} />
+                              </button>
                             </div>
+                          ) : (
+                            <div className="flex flex-col min-[1228px]:flex-row min-[1228px]:items-start justify-between gap-4 min-[1228px]:gap-2">
+                              <div
+                                className="min-w-0 flex-1 pr-2 cursor-pointer w-full"
+                                onClick={() => {
+                                  setEditingId(doc.public_id);
+                                  setTempTitle(doc.title);
+                                }}
+                              >
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-2 break-all leading-snug">
+                                  {doc.title}
+                                </h3>
+                                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                  <p className="text-[10px] text-gray-400 uppercase tracking-widest truncate max-w-[120px]">
+                                    Ref: {doc.public_id}
+                                  </p>
 
-                            {/* Share, Download & Delete*/}
-                            <div className="flex gap-1 transition-opacity flex-shrink-0">
+                                  {doc.summary && (
+                                    <span className="px-2 py-0.5 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md text-[8px] font-black uppercase tracking-widest text-samurai-gold shrink-0">
+                                      {doc.summary_type === "detailed"
+                                        ? "Detailed"
+                                        : "Simple"}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="opacity-0 group-hover:opacity-100 text-[10px] text-samurai-gold font-bold uppercase tracking-tighter transition-opacity absolute -bottom-4 left-0">
+                                  Click title to edit
+                                </span>
+                              </div>
+
+                              {/* Share, Download & Delete*/}
+                              <div className="flex gap-1 transition-opacity flex-shrink-0 self-end min-[1228px]:self-auto">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    promptShare(doc);
+                                  }}
+                                  className="text-gray-400 hover:text-samurai-gold transition-all p-2 hover:bg-samurai-gold/10 rounded-lg"
+                                  title="Share to War Room"
+                                >
+                                  <Share2 size={18} />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDownloadDoc(doc);
+                                  }}
+                                  className="text-gray-400 hover:text-blue-400 transition-all p-2 hover:bg-blue-400/10 rounded-lg"
+                                  title="Download"
+                                >
+                                  <Download size={18} />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    promptDelete(doc.public_id);
+                                  }}
+                                  className="text-gray-400 hover:text-red-500 transition-all p-2 hover:bg-red-500/10 rounded-lg"
+                                  title="Destroy Scroll"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {!isGuest && !doc.summary && (
+                          <div className="mb-4 mt-auto">
+                            <div className="flex bg-gray-100 dark:bg-[#1a1a1c] p-1.5 rounded-[1rem] border border-gray-200 dark:border-white/5 shadow-inner">
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  promptShare(doc);
-                                }}
-                                className="text-gray-400 hover:text-samurai-gold transition-all p-2 hover:bg-samurai-gold/10 rounded-lg"
-                                title="Share to War Room"
+                                onClick={() =>
+                                  setSummaryTypes((prev) => ({
+                                    ...prev,
+                                    [doc.public_id]: "Simple",
+                                  }))
+                                }
+                                className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                                  (summaryTypes[doc.public_id] || "Simple") ===
+                                  "Simple"
+                                    ? "bg-white dark:bg-white/10 text-samurai-gold shadow-sm"
+                                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                }`}
                               >
-                                <Share2 size={18} />
+                                Simple
                               </button>
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDownloadDoc(doc);
-                                }}
-                                className="text-gray-400 hover:text-blue-400 transition-all p-2 hover:bg-blue-400/10 rounded-lg"
-                                title="Download"
+                                onClick={() =>
+                                  setSummaryTypes((prev) => ({
+                                    ...prev,
+                                    [doc.public_id]: "detailed",
+                                  }))
+                                }
+                                className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                                  summaryTypes[doc.public_id] === "detailed"
+                                    ? "bg-white dark:bg-white/10 text-samurai-gold shadow-sm"
+                                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                }`}
                               >
-                                <Download size={18} />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  promptDelete(doc.public_id);
-                                }}
-                                className="text-gray-400 hover:text-red-500 transition-all p-2 hover:bg-red-500/10 rounded-lg"
-                                title="Destroy Scroll"
-                              >
-                                <Trash2 size={18} />
+                                Detailed
                               </button>
                             </div>
                           </div>
                         )}
-                      </div>
-
-                      {!isGuest && !doc.summary && (
-                        <div className="mb-4 mt-auto">
-                          <div className="flex bg-gray-100 dark:bg-[#1a1a1c] p-1.5 rounded-[1rem] border border-gray-200 dark:border-white/5 shadow-inner">
-                            <button
-                              onClick={() =>
-                                setSummaryTypes((prev) => ({
-                                  ...prev,
-                                  [doc.public_id]: "Simple",
-                                }))
-                              }
-                              className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                                (summaryTypes[doc.public_id] || "Simple") ===
-                                "Simple"
-                                  ? "bg-white dark:bg-white/10 text-samurai-gold shadow-sm"
-                                  : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                              }`}
-                            >
-                              Simple
-                            </button>
-                            <button
-                              onClick={() =>
-                                setSummaryTypes((prev) => ({
-                                  ...prev,
-                                  [doc.public_id]: "detailed",
-                                }))
-                              }
-                              className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                                summaryTypes[doc.public_id] === "detailed"
-                                  ? "bg-white dark:bg-white/10 text-samurai-gold shadow-sm"
-                                  : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                              }`}
-                            >
-                              Detailed
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                      <button
-                        onClick={() => handleSummarize(doc.public_id)}
-                        disabled={loadingId !== null}
-                        className="w-full bg-samurai-gold text-white dark:text-black py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-samurai-gold/10"
-                      >
-                        {loadingId === doc.public_id
-                          ? "Channeling AI..."
-                          : doc.summary
-                            ? "View Insight"
-                            : "Summon AI Insight"}
-                      </button>
-                    </motion.div>
-                  ))}
+                        <button
+                          onClick={() => handleSummarize(doc.public_id)}
+                          disabled={loadingId !== null}
+                          className="w-full bg-samurai-gold text-white dark:text-black py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-samurai-gold/10"
+                        >
+                          {loadingId === doc.public_id
+                            ? "Channeling AI..."
+                            : doc.summary
+                              ? "View Insight"
+                              : "Summon AI Insight"}
+                        </button>
+                      </motion.div>
+                    ))}
 
                   {/* Pagination Controls */}
-                  {viewMode === "personal" && documents.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase())).length > itemsPerPage && (
-                    <div className="col-span-full mt-8 flex justify-center items-center gap-4">
-                      <button
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        className="px-4 py-2 border border-gray-200 dark:border-white/10 text-xs font-bold uppercase rounded-xl hover:border-samurai-gold/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white/5 text-gray-800 dark:text-gray-200 hover:bg-white/10"
-                      >
-                        Previous
-                      </button>
-                      <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                        Page {currentPage} of {Math.ceil(documents.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase())).length / itemsPerPage)}
-                      </span>
-                      <button
-                        disabled={currentPage === Math.ceil(documents.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase())).length / itemsPerPage)}
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(documents.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase())).length / itemsPerPage)))}
-                        className="px-4 py-2 border border-gray-200 dark:border-white/10 text-xs font-bold uppercase rounded-xl hover:border-samurai-gold/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white/5 text-gray-800 dark:text-gray-200 hover:bg-white/10"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  )}
+                  {viewMode === "personal" &&
+                    documents.filter((d) =>
+                      d.title.toLowerCase().includes(searchQuery.toLowerCase()),
+                    ).length > itemsPerPage && (
+                      <div className="col-span-full mt-8 flex justify-center items-center gap-4">
+                        <button
+                          disabled={currentPage === 1}
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(prev - 1, 1))
+                          }
+                          className="px-4 py-2 border border-gray-200 dark:border-white/10 text-xs font-bold uppercase rounded-xl hover:border-samurai-gold/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white/5 text-gray-800 dark:text-gray-200 hover:bg-white/10"
+                        >
+                          Previous
+                        </button>
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                          Page {currentPage} of{" "}
+                          {Math.ceil(
+                            documents.filter((d) =>
+                              d.title
+                                .toLowerCase()
+                                .includes(searchQuery.toLowerCase()),
+                            ).length / itemsPerPage,
+                          )}
+                        </span>
+                        <button
+                          disabled={
+                            currentPage ===
+                            Math.ceil(
+                              documents.filter((d) =>
+                                d.title
+                                  .toLowerCase()
+                                  .includes(searchQuery.toLowerCase()),
+                              ).length / itemsPerPage,
+                            )
+                          }
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(
+                                prev + 1,
+                                Math.ceil(
+                                  documents.filter((d) =>
+                                    d.title
+                                      .toLowerCase()
+                                      .includes(searchQuery.toLowerCase()),
+                                  ).length / itemsPerPage,
+                                ),
+                              ),
+                            )
+                          }
+                          className="px-4 py-2 border border-gray-200 dark:border-white/10 text-xs font-bold uppercase rounded-xl hover:border-samurai-gold/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white/5 text-gray-800 dark:text-gray-200 hover:bg-white/10"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
                 </div>
               </div>
             ) : (
@@ -1171,20 +1219,29 @@ const Dashboard = () => {
                 <div className="bg-white dark:bg-[#121214] border border-samurai-gold/20 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
                   {/* Cards Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {activities.filter(act => act.document_title.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 ? (
-                      activities.filter(act => act.document_title.toLowerCase().includes(searchQuery.toLowerCase())).map((act) => {
-                        const isMe =
-                          currentUser &&
-                          String(act.user_id) === String(currentUser.id);
+                    {activities.filter((act) =>
+                      act.document_title
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase()),
+                    ).length > 0 ? (
+                      activities
+                        .filter((act) =>
+                          act.document_title
+                            .toLowerCase()
+                            .includes(searchQuery.toLowerCase()),
+                        )
+                        .map((act) => {
+                          const isMe =
+                            currentUser &&
+                            String(act.user_id) === String(currentUser.id);
 
-                        return (
-                          <div
-                            key={act.id}
-                            className="relative p-8 rounded-[2rem] border transition-all duration-300 flex flex-col justify-between min-h-[180px] bg-white/5 border-white/5 hover:border-samurai-gold/40 hover:bg-white/10 shadow-xl hover:shadow-samurai-gold/5"
-                          >
-                            {/* Header Card: User & Timestamp */}
-                            <div className="flex justify-between items-center mb-4">
-                              <div className="flex items-center gap-2 min-w-0">
+                          return (
+                            <div
+                              key={act.id}
+                              className="relative p-8 rounded-[2rem] border transition-all duration-300 flex flex-col justify-between min-h-[180px] bg-white/5 border-white/5 hover:border-samurai-gold/40 hover:bg-white/10 shadow-xl hover:shadow-samurai-gold/5"
+                            >
+                              {/* Header Card: User */}
+                              <div className="flex items-center gap-2 mb-1 min-w-0">
                                 <div className="w-2 h-2 rounded-full bg-samurai-gold animate-pulse shadow-[0_0_8px_rgba(212,175,55,0.8)] shrink-0" />
                                 <span
                                   className={`text-[10px] font-black uppercase tracking-widest truncate ${isMe ? "text-samurai-gold" : "text-gray-400"}`}
@@ -1193,113 +1250,91 @@ const Dashboard = () => {
                                 </span>
                               </div>
 
-                              {/* Trash button and Time box */}
-                              <div className="flex items-center gap-2">
-                                {/* Download button */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const matchedDoc = documents.find(d => d.public_id === act.document_public_id);
-                                    if (matchedDoc) {
-                                      setDownloadDoc(matchedDoc);
-                                    } else {
-                                      setDownloadDoc({
-                                        public_id: act.document_public_id,
-                                        title: act.document_title,
-                                        summary: true,
-                                        filetype: "unknown"
-                                      });
-                                    }
-                                  }}
-                                  className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
-                                  title="Download Scroll"
-                                >
-                                  <Download size={14} />
-                                </button>
-
-                                {/* Delete button */}
-                                {currentUser &&
-                                  String(act.user_id) ===
-                                    String(currentUser.id) && (
-                                    <button
-                                      onClick={() => promptRemoveShare(act)}
-                                      className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
-                                      title="Remove scroll from War Room"
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
-                                  )}
-
-                                {/* Shared document time */}
-                                <div className="bg-black/4 dark:bg-white/5 px-2 py-1 rounded-lg border border-white/5 shadow-inner shrink-0">
-                                  <span className="text-[12px] md:text-[11px] font-mono text-gray-500 dark:text-gray-400 tracking-tighter whitespace-nowrap">
-                                    {(() => {
-                                      let dateStr = act.created_at;
-                                      if (
-                                        dateStr &&
-                                        !dateStr.includes("Z") &&
-                                        !dateStr.includes("+")
-                                      ) {
-                                        dateStr =
-                                          dateStr.replace(" ", "T") + "Z";
-                                      }
-                                      const date = new Date(dateStr);
-                                      return date.toLocaleTimeString(
-                                        navigator.language,
-                                        {
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                          hour12: false,
-                                        },
-                                      );
-                                    })()}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Content: Title */}
-                            <div className="flex-1 flex items-center py-2">
-                              <div className="w-full">
+                              {/* Content: Title */}
+                              <div className="flex-1 flex items-center pb-2">
                                 <div className="w-full">
-                                  <h4 className="text-lg font-bold dark:text-gray-100 group-hover:text-samurai-gold transition-colors line-clamp-2 leading-snug">
-                                    {act.document_title}
-                                  </h4>
-                                  <div className="flex items-center gap-2 mt-1 mb-1">
-                                    <span className="px-2 py-0.5 bg-black/20 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md text-[8px] font-black uppercase tracking-widest text-samurai-gold">
-                                      {act.summary_type === "detailed" ||
-                                      act.document_summary_type === "detailed"
-                                        ? "Detailed"
-                                        : "Simple"}
-                                    </span>
+                                  <div className="w-full">
+                                    <h4 className="text-lg font-bold dark:text-gray-100 group-hover:text-samurai-gold transition-colors line-clamp-2 leading-snug">
+                                      {act.document_title}
+                                    </h4>
+                                    <div className="flex items-center gap-2 mt-1 mb-2">
+                                      <span className="px-2 py-0.5 bg-black/20 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-md text-[8px] font-black uppercase tracking-widest text-samurai-gold">
+                                        {act.summary_type === "detailed" ||
+                                        act.document_summary_type === "detailed"
+                                          ? "Detailed"
+                                          : "Simple"}
+                                      </span>
+                                    </div>
+                                    
+                                    {/* Action buttons */}
+                                    <div className="flex items-center gap-2 mb-3">
+                                      {/* Download button */}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const matchedDoc = documents.find(
+                                            (d) =>
+                                              d.public_id ===
+                                              act.document_public_id,
+                                          );
+                                          if (matchedDoc) {
+                                            setDownloadDoc(matchedDoc);
+                                          } else {
+                                            setDownloadDoc({
+                                              public_id: act.document_public_id,
+                                              title: act.document_title,
+                                              summary: true,
+                                              filetype: "unknown",
+                                            });
+                                          }
+                                        }}
+                                        className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
+                                        title="Download Scroll"
+                                      >
+                                        <Download size={14} />
+                                      </button>
+
+                                      {/* Delete button */}
+                                      {currentUser &&
+                                        String(act.user_id) ===
+                                          String(currentUser.id) && (
+                                          <button
+                                            onClick={() => promptRemoveShare(act)}
+                                            className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                            title="Remove scroll from War Room"
+                                          >
+                                            <Trash2 size={14} />
+                                          </button>
+                                        )}
+                                    </div>
+
+                                    <div className="h-0.5 w-8 bg-samurai-gold/30 rounded-full group-hover:w-16 transition-all" />
                                   </div>
-                                  <div className="h-0.5 w-8 bg-samurai-gold/30 rounded-full group-hover:w-16 transition-all" />
                                 </div>
                               </div>
-                            </div>
 
-                            {/* Footer: Action Button */}
-                            <div className="mt-4 pt-4 border-t border-white/5">
-                              <button
-                                onClick={() =>
-                                  handleViewSharedSummary(
-                                    act.document_public_id,
-                                  )
-                                }
-                                className="flex items-center justify-between w-full group/btn"
-                              >
-                                <span className="text-[10px] font-black text-samurai-gold uppercase tracking-[0.2em] group-hover/btn:tracking-[0.25em] transition-all">
-                                  VIEW DOCUMENT
-                                </span>
-                                <BrainCircuit
-                                  size={16}
-                                  className="text-samurai-gold opacity-40 group-hover/btn:opacity-100 group-hover/btn:scale-110 transition-all"
-                                />
-                              </button>
+                              {/* Footer: Action Button */}
+                              <div className="mt-4 pt-4 border-t border-white/5">
+                                <button
+                                  onClick={() =>
+                                    handleViewSharedSummary(
+                                      act.document_public_id,
+                                    )
+                                  }
+                                  className="flex items-center justify-between w-full group/btn"
+                                >
+                                  <span className="text-[10px] font-black text-samurai-gold uppercase tracking-[0.2em] group-hover/btn:tracking-[0.25em] transition-all">
+                                    VIEW DOCUMENT
+                                  </span>
+                                  <BrainCircuit
+                                    size={16}
+                                    className="text-samurai-gold opacity-40 group-hover/btn:opacity-100 group-hover/btn:scale-110 transition-all"
+                                  />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })
+                          );
+                        })
                     ) : (
                       <div className="col-span-full py-24 flex flex-col items-center opacity-30">
                         <Users size={48} className="mb-4 text-gray-400" />
@@ -1874,7 +1909,10 @@ const Dashboard = () => {
                       {downloadDoc.filetype?.toUpperCase()} · Raw file
                     </p>
                   </div>
-                  <Download size={14} className="ml-auto text-gray-400 group-hover:text-samurai-gold transition-colors shrink-0" />
+                  <Download
+                    size={14}
+                    className="ml-auto text-gray-400 group-hover:text-samurai-gold transition-colors shrink-0"
+                  />
                 </a>
 
                 {/* Summarized PDF */}
@@ -1897,7 +1935,10 @@ const Dashboard = () => {
                         PDF · AI-generated insight
                       </p>
                     </div>
-                    <Download size={14} className="ml-auto text-gray-400 group-hover:text-samurai-gold transition-colors shrink-0" />
+                    <Download
+                      size={14}
+                      className="ml-auto text-gray-400 group-hover:text-samurai-gold transition-colors shrink-0"
+                    />
                   </a>
                 ) : (
                   <div className="flex items-center gap-4 w-full p-4 rounded-2xl border border-dashed border-gray-200 dark:border-white/5 opacity-40 cursor-not-allowed">

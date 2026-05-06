@@ -300,7 +300,7 @@ def share_document(
     return {"message": f"The document '{doc.title}' has been shared with '{group.name}'"}
 
 
-# ── DOWNLOAD ENDPOINTS ───────────────────────────────────────────────────────
+# DOWNLOAD 
 
 @router.get("/{public_id}/download-original")
 def download_original_document(
@@ -309,7 +309,7 @@ def download_original_document(
     current_user: User = Depends(get_optional_current_user)
 ):
     """Serve the original uploaded file as a download."""
-    # Try DB first (registered users)
+    # Try DB first 
     doc = get_document_by_public_id(db, public_id)
     
     if doc:

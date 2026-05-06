@@ -1,3 +1,6 @@
+"""
+API Router for Admin endpoints.
+"""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from src.core.db.database import get_db
@@ -46,7 +49,6 @@ def toggle_user_ban(
     target_user.ban_reason = request.reason if target_user.is_banned else None
     
     if target_user.is_banned:
-        # Delete dangerous documents owned by this user
         dangerous_docs = db.query(Document).filter(
             Document.owner_id == target_user_id,
             Document.is_dangerous == True
@@ -100,7 +102,6 @@ def ban_user(
     user.is_banned = True
     user.ban_reason = request.reason
 
-    # Delete dangerous documents owned by this user
     dangerous_docs = db.query(Document).filter(
         Document.owner_id == user_id,
         Document.is_dangerous == True
