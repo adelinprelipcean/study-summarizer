@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import Login from "../pages/Login";
+import api from "../api";
 
 vi.mock("../api", () => ({
   default: { post: vi.fn() },
@@ -32,7 +33,8 @@ const renderLogin = () =>
 
 describe("Login page", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    // resetAllMocks clears queued once-values too — prevents bleed between tests
+    vi.resetAllMocks();
     localStorage.clear();
   });
 
@@ -43,7 +45,6 @@ describe("Login page", () => {
 
   it("renders email and password inputs", () => {
     renderLogin();
-    // Inputs have no associated label (no htmlFor/id), query by type
     expect(document.querySelector('input[type="email"]')).toBeTruthy();
     expect(document.querySelector('input[type="password"]')).toBeTruthy();
   });
@@ -54,7 +55,6 @@ describe("Login page", () => {
   });
 
   it("shows error message on failed login", async () => {
-    const api = (await import("../api")).default;
     api.post.mockRejectedValueOnce({
       response: { status: 401, data: { detail: "Invalid credentials" } },
     });
@@ -69,14 +69,12 @@ describe("Login page", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /continue journey/i }));
 
-    // Component sets feedback.message to "Invalid credentials, warrior."
     await waitFor(() => {
       expect(screen.getByText(/invalid credentials, warrior/i)).toBeInTheDocument();
     });
   });
 
   it("stores token in localStorage on successful login", async () => {
-    const api = (await import("../api")).default;
     api.post.mockResolvedValueOnce({ data: { access_token: "jwt-token-abc" } });
 
     renderLogin();

@@ -44,7 +44,16 @@ jobs:
           ENV: test
         run: |
           cd backend
-          python -c "from src.main import app; print('imports OK')"
+          python - <<'EOF'
+          import sys, traceback
+          try:
+              from src.main import app
+              print("imports OK")
+          except Exception as e:
+              print(f"\n=== IMPORT FAILED: {type(e).__name__}: {e} ===", file=sys.stderr)
+              traceback.print_exc()
+              sys.exit(1)
+          EOF
 
       - name: Run tests
         env:
