@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import Login from "../pages/Login";
@@ -33,7 +33,6 @@ const renderLogin = () =>
 
 describe("Login page", () => {
   beforeEach(() => {
-    // resetAllMocks clears queued once-values too — prevents bleed between tests
     vi.resetAllMocks();
     localStorage.clear();
   });
@@ -61,13 +60,15 @@ describe("Login page", () => {
 
     renderLogin();
 
-    fireEvent.change(document.querySelector('input[type="email"]'), {
-      target: { value: "bad@example.com" },
+    await act(async () => {
+      fireEvent.change(document.querySelector('input[type="email"]'), {
+        target: { value: "bad@example.com" },
+      });
+      fireEvent.change(document.querySelector('input[type="password"]'), {
+        target: { value: "wrongpass" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /continue journey/i }));
     });
-    fireEvent.change(document.querySelector('input[type="password"]'), {
-      target: { value: "wrongpass" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /continue journey/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/invalid credentials, warrior/i)).toBeInTheDocument();
@@ -79,16 +80,17 @@ describe("Login page", () => {
 
     renderLogin();
 
-    fireEvent.change(document.querySelector('input[type="email"]'), {
-      target: { value: "user@example.com" },
+    // act() wraps the async event handler so the promise settles before assertions
+    await act(async () => {
+      fireEvent.change(document.querySelector('input[type="email"]'), {
+        target: { value: "user@example.com" },
+      });
+      fireEvent.change(document.querySelector('input[type="password"]'), {
+        target: { value: "Password123!" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /continue journey/i }));
     });
-    fireEvent.change(document.querySelector('input[type="password"]'), {
-      target: { value: "Password123!" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /continue journey/i }));
 
-    await waitFor(() => {
-      expect(localStorage.getItem("token")).toBe("jwt-token-abc");
-    });
+    expect(localStorage.getItem("token")).toBe("jwt-token-abc");
   });
 });

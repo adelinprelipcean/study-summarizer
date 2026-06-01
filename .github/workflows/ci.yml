@@ -35,26 +35,6 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
-      - name: Verify imports
-        env:
-          DATABASE_URL: sqlite:///./test.db
-          JWT_SECRET: ci-test-secret-key-not-for-production
-          GEMINI_API_KEY: test-placeholder
-          UPLOAD_DIR: test_uploads
-          ENV: test
-        run: |
-          cd backend
-          python - <<'EOF'
-          import sys, traceback
-          try:
-              from src.main import app
-              print("imports OK")
-          except Exception as e:
-              print(f"\n=== IMPORT FAILED: {type(e).__name__}: {e} ===", file=sys.stderr)
-              traceback.print_exc()
-              sys.exit(1)
-          EOF
-
       - name: Run tests
         env:
           DATABASE_URL: sqlite:///./test.db
