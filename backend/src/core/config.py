@@ -20,5 +20,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: timedelta = timedelta(hours=24)
     MAX_FILE_SIZE: int = 10 * 1024 * 1024 # 10 MB
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
+    # Azure Blob Storage (optional — leave blank to use local filesystem)
+    AZURE_STORAGE_CONNECTION_STRING: str | None = None
+    AZURE_STORAGE_CONTAINER: str = "documents"
 
 settings = Settings()

@@ -5,11 +5,11 @@ Implements application logic such as generating IDs, validating document
 existence, and orchestrating actions between API routes and the repository.
 Contains no database queries—delegates all persistence actions to the repository.
 """
-import shutil
 import os
 from datetime import datetime, timezone, timedelta
 from fastapi import UploadFile, HTTPException
 from sqlalchemy.orm import Session
+from src.core.storage import storage
 from src.api.repositories.document_repository import (
     create_document,
     get_all_documents,
@@ -58,14 +58,11 @@ def create_document_service(db: Session, file: UploadFile, title: str, owner_id:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-    save_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.{ext}")
-
     try:
-        with open(save_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        storage.save(file.file, f"{public_id}.{ext}")
     except Exception as e:
         delete_document(db, doc.id)
-        raise HTTPException(status_code=500, detail=f"Could not save file to disk: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Could not save file: {str(e)}")
 
     return doc
 

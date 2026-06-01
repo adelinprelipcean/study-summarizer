@@ -1,7 +1,6 @@
 """
 API router for Document endpoints.
 """
-import shutil
 import os
 import io
 import re
@@ -10,6 +9,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
+from src.core.storage import storage
 
 from src.core.db.database import get_db
 from src.api.schemas.document_schemas import (
@@ -71,10 +71,7 @@ async def create_document_endpoint(
 
         now = datetime.now(timezone.utc)
         public_id = f"guest-{uuid.uuid4()}"
-        save_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.{ext}")
-
-        with open(save_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        storage.save(file.file, f"{public_id}.{ext}")
 
         return {
             "public_id": public_id,
@@ -119,14 +116,8 @@ def delete_document_endpoint(
     current_user: User = Depends(get_optional_current_user)
 ):
     if current_user is None:
-        # Physically remove temporary original file and summary file from disk
         for ext in ["pdf", "docx", "txt", "summary.txt"]:
-            file_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.{ext}")
-            if os.path.exists(file_path):
-                try:
-                    os.remove(file_path)
-                except Exception as e:
-                    print(f"Error removing guest file {file_path}: {e}")
+            storage.delete(f"{public_id}.{ext}")
         return {"message": "Temporary scroll removed"}
 
     doc = get_document_by_public_id(db, public_id)
@@ -183,20 +174,21 @@ def summarize_document(
         else:
             raise HTTPException(status_code=404, detail="Document not found in archive")
 
-    file_path = None
+    # Determine the storage filename
     if doc:
-        file_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.{doc.filetype}")
+        stored_name = f"{public_id}.{doc.filetype}"
     else:
-        for ext in ["pdf", "docx", "txt"]:
-            possible_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.{ext}")
-            if os.path.exists(possible_path):
-                file_path = possible_path
-                break
+        stored_name = next(
+            (f"{public_id}.{ext}" for ext in ["pdf", "docx", "txt"] if storage.exists(f"{public_id}.{ext}")),
+            None,
+        )
 
-    if not file_path or not os.path.exists(file_path):
+    if not stored_name or not storage.exists(stored_name):
         raise HTTPException(status_code=404, detail="Physical file not found on server")
 
-    text_content = extract_text_from_file(file_path)
+    with storage.as_tempfile(stored_name) as file_path:
+        text_content = extract_text_from_file(file_path)
+
     if not text_content:
         raise HTTPException(status_code=400, detail="Could not extract text. Scroll might be scanned, empty or corrupted.")
 
@@ -208,9 +200,7 @@ def summarize_document(
         if doc:
             save_document_summary_service(db, doc, summary_text, bool(is_dangerous_flag), summary_type)
         else:
-            guest_summary_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.summary.txt")
-            with open(guest_summary_path, "w", encoding="utf-8") as f:
-                f.write(summary_text)
+            storage.save_text(summary_text, f"{public_id}.summary.txt")
 
         return {
             "public_id": public_id,
@@ -272,24 +262,29 @@ def download_original_document(
                     raise HTTPException(status_code=403, detail="Not authorized")
             else:
                 raise HTTPException(status_code=403, detail="Not authorized")
-        file_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.{doc.filetype}")
+        stored_name = f"{public_id}.{doc.filetype}"
         download_name = doc.filename or f"{doc.title}.{doc.filetype}"
     else:
-        file_path = None
-        for ext in ["pdf", "docx", "txt"]:
-            candidate = os.path.join(settings.UPLOAD_DIR, f"{public_id}.{ext}")
-            if os.path.exists(candidate):
-                file_path = candidate
-                download_name = f"document.{ext}"
-                break
+        stored_name = next(
+            (f"{public_id}.{ext}" for ext in ["pdf", "docx", "txt"] if storage.exists(f"{public_id}.{ext}")),
+            None,
+        )
+        download_name = f"document.{stored_name.rsplit('.', 1)[-1]}" if stored_name else "document"
 
-    if not file_path or not os.path.exists(file_path):
+    if not stored_name or not storage.exists(stored_name):
         raise HTTPException(status_code=404, detail="File not found on server")
 
-    return FileResponse(
-        path=file_path,
-        filename=download_name,
-        media_type="application/octet-stream"
+    # Return from local path when available (local dev / Docker volume),
+    # otherwise stream from blob storage.
+    local = storage.local_path(stored_name)
+    if local:
+        return FileResponse(path=local, filename=download_name, media_type="application/octet-stream")
+
+    data = storage.load_bytes(stored_name)
+    return StreamingResponse(
+        io.BytesIO(data),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{download_name}"'},
     )
 
 
@@ -319,10 +314,9 @@ def download_summary_pdf(
         summary_text = doc.summary
         summary_type = doc.summary_type or "simple"
     else:
-        guest_summary_path = os.path.join(settings.UPLOAD_DIR, f"{public_id}.summary.txt")
-        if os.path.exists(guest_summary_path):
-            with open(guest_summary_path, "r", encoding="utf-8") as f:
-                summary_text = f.read()
+        summary_filename = f"{public_id}.summary.txt"
+        if storage.exists(summary_filename):
+            summary_text = storage.load_text(summary_filename)
             title = title or "Guest Document Summary"
             summary_type = "simple"
         else:
