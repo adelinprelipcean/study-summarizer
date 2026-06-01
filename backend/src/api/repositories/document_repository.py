@@ -52,6 +52,10 @@ def update_document_status(db: Session, public_id: str, status: str):
 def get_all_documents_admin(db: Session) -> list[Document]:
     return db.query(Document).order_by(Document.uploaded_at.desc()).all()
 
+
+def get_all_document_public_ids(db: Session) -> list[str]:
+    return [row.public_id for row in db.query(Document.public_id).all()]
+
 def share_document_with_group(db: Session, public_id: str, group_id: int):
     doc = db.query(Document).filter(Document.public_id == public_id).first()
     if not doc:
@@ -64,3 +68,39 @@ def share_document_with_group(db: Session, public_id: str, group_id: int):
 
 def get_documents_by_group(db: Session, group_id: int):
     return db.query(Document).filter(Document.group_id == group_id).all()
+
+
+def update_document_summary(db: Session, doc: Document, summary: str, is_dangerous: bool, summary_type: str) -> Document:
+    doc.summary = summary
+    doc.is_dangerous = is_dangerous
+    doc.summary_type = summary_type
+    db.add(doc)
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+
+def rename_document(db: Session, doc: Document, new_title: str) -> Document:
+    doc.title = new_title
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+
+def mark_document_safe(db: Session, doc: Document) -> Document:
+    doc.is_dangerous = False
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+
+def get_dangerous_documents_by_user(db: Session, user_id: int) -> list[Document]:
+    return db.query(Document).filter(
+        Document.owner_id == user_id,
+        Document.is_dangerous == True
+    ).all()
+
+
+def delete_document_obj(db: Session, doc: Document) -> None:
+    db.delete(doc)
+    db.commit()

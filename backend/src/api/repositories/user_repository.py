@@ -23,3 +23,13 @@ def create_user(db: Session, user_dict: dict) -> User:
     db.commit()
     db.refresh(new_user)
     return new_user
+
+def get_all_users(db: Session) -> list[User]:
+    return db.query(User).all()
+
+def set_user_ban(db: Session, user: User, is_banned: bool, reason: str | None) -> User:
+    user.is_banned = is_banned
+    user.ban_reason = reason if is_banned else None
+    db.commit()
+    db.refresh(user)
+    return user

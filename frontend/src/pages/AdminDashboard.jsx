@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
+import api from "../api";
 import {
   ShieldAlert,
   UserX,
@@ -39,7 +39,7 @@ const AdminDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:8000/api/admin/users", {
+      const res = await api.get("/admin/users", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(res.data);
@@ -54,8 +54,8 @@ const AdminDashboard = () => {
 
   const handleViewInsight = async (userId) => {
     try {
-      const response = await axios.get(
-        `http://127.0.0.1:8000/api/admin/users/${userId}/dangerous-documents`,
+      const response = await api.get(
+        `/admin/users/${userId}/dangerous-documents`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -72,8 +72,8 @@ const AdminDashboard = () => {
 
   const handleMarkSafe = async (docPublicId, userId) => {
     try {
-      await axios.patch(
-        `http://127.0.0.1:8000/api/admin/documents/${docPublicId}/verify-safe`,
+      await api.patch(
+        `/admin/documents/${docPublicId}/verify-safe`,
         {},
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -101,8 +101,8 @@ const AdminDashboard = () => {
 
   const executeBanStatusChange = async (userId, reason) => {
     try {
-      await axios.patch(
-        `http://127.0.0.1:8000/api/admin/users/${userId}/ban`,
+      await api.patch(
+        `/admin/users/${userId}/ban`,
         { reason: reason },
         { headers: { Authorization: `Bearer ${token}` } },
       );

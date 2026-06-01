@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+import api from "../api";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserPlus, Sparkles, X, AlertCircle } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
@@ -22,7 +22,7 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://127.0.0.1:8000/api/users/register", formData);
+      await api.post("/users/register", formData);
       setFeedback({
         show: true,
         message: "The Ranks have accepted you. Redirecting...",

@@ -58,8 +58,11 @@ def get_user_groups(db: Session, user_id: int):
     return db.query(Group).join(Group.members).filter(User.id == user_id).all()
 
 def get_group_by_id(db: Session, group_id: int):
-    # Returns a group by it's ID.
     return db.query(Group).filter(Group.id == group_id).first()
+
+
+def get_group_by_access_code(db: Session, access_code: str):
+    return db.query(Group).filter(Group.access_code == access_code).first()
 
 def get_group_documents(db: Session, group_id: int):
     # Returns all the documents that are shared with the actual group
@@ -69,19 +72,64 @@ def get_group_activities(db: Session, group_id: int):
     return (
         db.query(
             GroupActivity.id,
-            GroupActivity.content,
-            GroupActivity.created_at,
-            GroupActivity.document_public_id,
-            Document.summary_type.label("summary_type"),
             User.username,
-            Document.title.label("document_title")
+            User.id.label("user_id"),
+            Document.title.label("document_title"),
+            Document.summary_type.label("summary_type"),
+            GroupActivity.document_public_id,
+            GroupActivity.content,
+            GroupActivity.created_at
         )
         .join(User, GroupActivity.user_id == User.id)
         .join(Document, GroupActivity.document_public_id == Document.public_id)
         .filter(GroupActivity.group_id == group_id)
-        .order_by(GroupActivity.created_at.asc())
+        .order_by(GroupActivity.created_at.desc())
         .all()
     )
+
+
+def create_group_activity(db: Session, group_id: int, user_id: int, document_public_id: str, content: str) -> GroupActivity:
+    activity = GroupActivity(
+        group_id=group_id,
+        user_id=user_id,
+        document_public_id=document_public_id,
+        content=content
+    )
+    db.add(activity)
+    db.commit()
+    db.refresh(activity)
+    return activity
+
+
+def get_activity_by_id(db: Session, activity_id: int) -> GroupActivity:
+    return db.query(GroupActivity).filter(GroupActivity.id == activity_id).first()
+
+
+def delete_activity(db: Session, activity: GroupActivity) -> None:
+    db.delete(activity)
+    db.commit()
+
+
+def delete_group_activities_by_group(db: Session, group_id: int) -> None:
+    db.query(GroupActivity).filter(GroupActivity.group_id == group_id).delete()
+    db.commit()
+
+
+def get_group_activity_by_document(db: Session, group_id: int, document_public_id: str):
+    return db.query(GroupActivity).filter(
+        GroupActivity.group_id == group_id,
+        GroupActivity.document_public_id == document_public_id
+    ).first()
+
+
+def delete_group(db: Session, group: Group) -> None:
+    db.delete(group)
+    db.commit()
+
+
+def unlink_document_from_group(db: Session, document) -> None:
+    document.group_id = None
+    db.commit()
     
 def generate_unique_code(db: Session):
     while True:

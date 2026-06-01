@@ -1,7 +1,7 @@
 import os
 import pytest
 
-# Must come before any app imports — pydantic-settings reads these at class instantiation
+# Must be set before any app imports
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 os.environ.setdefault("JWT_SECRET", "test-secret-jwt-key-for-unit-tests")
 os.environ.setdefault("GEMINI_API_KEY", "test-placeholder")
@@ -10,39 +10,38 @@ os.environ.setdefault("ENV", "test")
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 
 from src.main import app
 from src.core.db.database import Base, get_db
 
-_TEST_DB_URL = "sqlite:///./test.db"
-_engine = create_engine(_TEST_DB_URL, connect_args={"check_same_thread": False})
+# StaticPool: all sessions share one connection so committed data is always
+# visible to the next request — required for SQLite in test environments.
+_engine = create_engine(
+    "sqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 _TestingSession = sessionmaker(autocommit=False, autoflush=False, bind=_engine)
 
 
 @pytest.fixture(scope="function")
-def db_session():
+def client():
     Base.metadata.create_all(bind=_engine)
-    session = _TestingSession()
-    try:
-        yield session
-    finally:
-        session.close()
-        Base.metadata.drop_all(bind=_engine)
 
-
-@pytest.fixture(scope="function")
-def client(db_session):
     def _override():
+        db = _TestingSession()
         try:
-            yield db_session
+            yield db
         finally:
-            pass
+            db.close()
 
     app.dependency_overrides[get_db] = _override
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+    Base.metadata.drop_all(bind=_engine)
 
 
 @pytest.fixture

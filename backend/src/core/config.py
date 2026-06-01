@@ -19,5 +19,6 @@ class Settings(BaseSettings):
     ENCODING_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: timedelta = timedelta(hours=24)
     MAX_FILE_SIZE: int = 10 * 1024 * 1024 # 10 MB
+    CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
 
 settings = Settings()

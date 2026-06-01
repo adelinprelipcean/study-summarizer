@@ -19,10 +19,20 @@ import {
   Download,
   FileDown,
 } from "lucide-react";
-import axios from "axios";
+import axiosOriginal from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import logoPng from "../assets/logo_summerey.png";
 import ThemeToggle from "../components/ThemeToggle";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+const axios = axiosOriginal.create();
+axios.interceptors.request.use((config) => {
+  if (config.url && config.url.includes("http://127.0.0.1:8000")) {
+    config.url = config.url.replace("http://127.0.0.1:8000", API_BASE_URL);
+  }
+  return config;
+});
 
 const Dashboard = () => {
   const [documents, setDocuments] = useState([]);
@@ -1892,7 +1902,7 @@ const Dashboard = () => {
               <div className="space-y-3">
                 {/* Original Document */}
                 <a
-                  href={`http://127.0.0.1:8000/api/documents/${downloadDoc.public_id}/download-original`}
+                  href={`${API_BASE_URL}/api/documents/${downloadDoc.public_id}/download-original`}
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => setDownloadDoc(null)}
@@ -1918,7 +1928,7 @@ const Dashboard = () => {
                 {/* Summarized PDF */}
                 {downloadDoc.summary ? (
                   <a
-                    href={`http://127.0.0.1:8000/api/documents/${downloadDoc.public_id}/download-summary`}
+                    href={`${API_BASE_URL}/api/documents/${downloadDoc.public_id}/download-summary?title=${encodeURIComponent(downloadDoc.title)}`}
                     target="_blank"
                     rel="noreferrer"
                     onClick={() => setDownloadDoc(null)}

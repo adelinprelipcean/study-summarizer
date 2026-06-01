@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+import api from "../api";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, ArrowRight } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
@@ -13,8 +13,8 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(
-        "http://127.0.0.1:8000/api/users/login",
+      const res = await api.post(
+        "/users/login",
         formData,
       );
       localStorage.setItem("token", res.data.access_token);

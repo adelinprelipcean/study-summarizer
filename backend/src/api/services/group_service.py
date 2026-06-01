@@ -30,9 +30,14 @@ from src.api.repositories.user_repository import get_user_by_id
 
 def create_group_service(db: Session, name: str, description: str, creator_id: int):
     from src.models.group import Group
+    from sqlalchemy.exc import IntegrityError
     if db.query(Group).filter(Group.name == name).first():
         raise HTTPException(status_code=400, detail="A War Room with this name already exists")
-    return create_group(db, name=name, description=description, creator_id=creator_id)
+    try:
+        return create_group(db, name=name, description=description, creator_id=creator_id)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="A War Room with this name already exists")
 
 
 def invite_user_to_group_service(db: Session, group_id: int, user_id: int, requester_id: int, requester_is_admin: bool):
