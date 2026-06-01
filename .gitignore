@@ -8,6 +8,12 @@ Thumbs.db
 # Environment Variables
 .env
 .env.*
+!.env.example
+!**/.env.example
+
+# Test artifacts
+test.db
+backend/test_uploads/
 
 # Python (Backend)
 __pycache__/
