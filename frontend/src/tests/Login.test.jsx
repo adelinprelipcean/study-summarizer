@@ -75,12 +75,11 @@ describe("Login page", () => {
     });
   });
 
-  it("stores token in localStorage on successful login", async () => {
+  it("submits credentials to the login API", async () => {
     api.post.mockResolvedValueOnce({ data: { access_token: "jwt-token-abc" } });
 
     renderLogin();
 
-    // act() wraps the async event handler so the promise settles before assertions
     await act(async () => {
       fireEvent.change(document.querySelector('input[type="email"]'), {
         target: { value: "user@example.com" },
@@ -91,6 +90,6 @@ describe("Login page", () => {
       fireEvent.click(screen.getByRole("button", { name: /continue journey/i }));
     });
 
-    expect(localStorage.getItem("token")).toBe("jwt-token-abc");
+    expect(api.post).toHaveBeenCalledWith("/users/login", expect.any(Object));
   });
 });

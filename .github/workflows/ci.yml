@@ -44,7 +44,7 @@ jobs:
           ENV: test
         run: |
           cd backend
-          pytest tests/ -v --tb=long
+          python -m pytest --tb=long
 
   # ─── Frontend ───────────────────────────────────────────────────────────────
   test-frontend:
