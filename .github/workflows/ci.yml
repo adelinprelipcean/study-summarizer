@@ -35,6 +35,17 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
+      - name: Verify imports
+        env:
+          DATABASE_URL: sqlite:///./test.db
+          JWT_SECRET: ci-test-secret-key-not-for-production
+          GEMINI_API_KEY: test-placeholder
+          UPLOAD_DIR: test_uploads
+          ENV: test
+        run: |
+          cd backend
+          python -c "from src.main import app; print('imports OK')"
+
       - name: Run tests
         env:
           DATABASE_URL: sqlite:///./test.db
@@ -44,7 +55,7 @@ jobs:
           ENV: test
         run: |
           cd backend
-          pytest tests/ -v --tb=short --no-header
+          pytest tests/ -v --tb=long
 
   # ─── Frontend ───────────────────────────────────────────────────────────────
   test-frontend:
