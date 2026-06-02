@@ -19,92 +19,134 @@
 	- Creare tabel în PostgreSQL prin FastAPI (Docker)
 	- Debugging importuri și structură proiect
 
-05_noi_2025 (3h)
+05_noi_2025 (5h)
 	- Testare completă Document Repository (CRUD) cu PostgreSQL
 	- Ajustări temporare pentru public_id + crearea testelor de validare
 	- Refactorizare repository pentru respectarea arhitecturii (logică mutată din repo)
+	- Debugging sesiune extinsă: rezolvat probleme de sesiuni SQLAlchemy și commit/rollback
+	- Validare completă a tuturor operațiunilor CRUD prin Swagger
 	- Pregătire pentru implementarea Service Layer (următorul pas)
 
 13_noi_2025 (3h)
-    - Recapitulare completă a arhitecturii backend (Router → Service → Repository → Model → DB)
-    - Creare layer Service pentru logica Document
-    - Implementare layer Router și integrare cu Pydantic schemas
-    - Conectare corectă între toate straturile (sessions, dependencies, schemas)
-    - Testare manuală repository (create, list, get, delete)
-    - Debugging și clarificare flux validare + logică + acces DB
+	- Recapitulare completă a arhitecturii backend (Router → Service → Repository → Model → DB)
+	- Creare layer Service pentru logica Document
+	- Implementare layer Router și integrare cu Pydantic schemas
+	- Conectare corectă între toate straturile (sessions, dependencies, schemas)
+	- Testare manuală repository (create, list, get, delete)
+	- Debugging și clarificare flux validare + logică + acces DB
 
 20_noi_2025 (3h)
-    - Implementate toate endpoint-urile pentru Documents (GET, POST, GET by public_id, DELETE, PUT-status)
-    - Creat și conectat schema Pydantic pentru update status (DocumentStatusUpdate)
-    - Extins layer-ul de service cu funcții pentru listare, căutare, ștergere și update status
-    - Implementat router complet pentru /api/documents cu prefix și tags corecte
-    - Testat toate endpoint-urile în Swagger (inclusiv validare Pydantic și răspunsuri structurate)
-    - Corectat bug-uri legate de ordine argumente + conectarea endpointurilor
-    - Confirmat funcționalitatea completă a CRUD-ului
+	- Implementate toate endpoint-urile pentru Documents (GET, POST, GET by public_id, DELETE, PUT-status)
+	- Creat și conectat schema Pydantic pentru update status (DocumentStatusUpdate)
+	- Extins layer-ul de service cu funcții pentru listare, căutare, ștergere și update status
+	- Implementat router complet pentru /api/documents cu prefix și tags corecte
+	- Testat toate endpoint-urile în Swagger (inclusiv validare Pydantic și răspunsuri structurate)
+	- Corectat bug-uri legate de ordine argumente + conectarea endpointurilor
+	- Confirmat funcționalitatea completă a CRUD-ului
 
-10_dec_2025 (2.5h)
-    - Research: Studiu comparativ metode autentificare (Session-based vs JWT) pentru arhitecturi microservices
-    - Analiză biblioteci Python pentru securitate (Passlib vs Bcrypt)
+10_dec_2025 (4.5h)
+	- Research: Studiu comparativ metode autentificare (Session-based vs JWT) pentru arhitecturi microservices
+	- Analiză biblioteci Python pentru securitate (Passlib vs Bcrypt)
+	- Studiu aprofundat JWT: structura token (header.payload.signature), semnare HS256, expirare
+	- Documentare flux complet Register → Login → Protected Route
+	- Prototip conceptual pentru middleware de autentificare în FastAPI
 
 18_dec_2025 (2h)
-    - Arhitectură: Proiectare schemă bază de date extinsă (ER Diagram update)
-    - Planificare relații SQL One-to-Many între Users și Documents
-    - Documentare strategie Dependency Injection în FastAPI pentru protecția rutelor
+	- Arhitectură: Proiectare schemă bază de date extinsă (ER Diagram update)
+	- Planificare relații SQL One-to-Many între Users și Documents
+	- Documentare strategie Dependency Injection în FastAPI pentru protecția rutelor
 
 05_ian_2026 (3h)
-    - Research: Best practices pentru stocarea securizată a parolelor (Hashing strategies)
-    - Pregătire mediu de dezvoltare pentru implementarea modulului de Auth
-    - Structurare logică pentru separarea Auth Service de User Repository
+	- Research: Best practices pentru stocarea securizată a parolelor (Hashing strategies)
+	- Pregătire mediu de dezvoltare pentru implementarea modulului de Auth
+	- Structurare logică pentru separarea Auth Service de User Repository
 
-13_ian_2026 (5h)
-    - Implementare completă modul Autentificare & Securitate (JWT Stateless)
-    - Configurare utilitare criptografice: Hashing parole (Bcrypt), Generare/Validare Token
-    - Implementare User Management: Schema Pydantic, Repository, Service, Router (Register/Login)
-    - Refactorizare Database: Actualizare modele ORM pentru relația User-Document (Foreign Keys)
-    - Securizare API: Implementare middleware 'get_current_user' (Dependency Injection) pentru protecția rutelor de upload
-    - Testare integrală flux Auth + Upload în Swagger UI
+13_ian_2026 (7h)
+	- Implementare completă modul Autentificare & Securitate (JWT Stateless)
+	- Configurare utilitare criptografice: Hashing parole (Bcrypt), Generare/Validare Token
+	- Implementare User Management: Schema Pydantic, Repository, Service, Router (Register/Login)
+	- Refactorizare Database: Actualizare modele ORM pentru relația User-Document (Foreign Keys)
+	- Securizare API: Implementare middleware 'get_current_user' (Dependency Injection) pentru protecția rutelor de upload
+	- Testare integrală flux Auth + Upload în Swagger UI
 	- Implementare RBAC (Role-Based Access Control): Adăugare rol de Admin și endpoint-uri dedicate
-    - Dezvoltare Admin Panel API: Rută specială pentru vizualizarea globală a documentelor
-    - Securizare (IDOR Protection): Restricționarea accesului la documente per owner_id
-    - Refactorizare Repository: Filtrarea automată a listelor de documente în funcție de utilizatorul logat
+	- Dezvoltare Admin Panel API: Rută specială pentru vizualizarea globală a documentelor
+	- Securizare (IDOR Protection): Restricționarea accesului la documente per owner_id
+	- Refactorizare Repository: Filtrarea automată a listelor de documente în funcție de utilizatorul logat
+	- Debugging extins: rezolvat conflicte de dependențe și erori de validare Pydantic
 
 09_feb_2026 (2h)
-    - Reluare dezvoltare & Implementare File Storage
-    - Configurare mediu de dezvoltare după pauza de sesiune
-    - Refactorizare endpoint Upload: Trecere de la JSON body la Multipart/Form-Data
-    - Implementare logică de salvare fizică a fișierelor pe disc (Local Storage)
-    - Validare tip fișier (doar PDF) și generare nume unic bazat pe ID
-    - Frontend Initialization & Setup
-    - Arhitectură și Navigare: Implementat sistemul de rute (App.jsx) pentru paginile Landing, Login, Register și Dashboard.
-    - UI/UX Design (Premium Samurai Aesthetic): Creat o identitate vizuală bazată pe Glassmorphism, culori personalizate (samurai-gold) și suport nativ pentru Dark Mode.
-    - Dashboard & Funcționalități Guest: Implementat dashboard-ul "The Archive" cu sidebar retractabil și logică de monitorizare a consumului pentru vizitatori (limita de 2 summarizări/zi salvată în localStorage).
-    - Optimizare Responsive
-    - Refactorizare & Debugging
+	- Reluare dezvoltare & Implementare File Storage
+	- Configurare mediu de dezvoltare după pauza de sesiune
+	- Refactorizare endpoint Upload: Trecere de la JSON body la Multipart/Form-Data
+	- Implementare logică de salvare fizică a fișierelor pe disc (Local Storage)
+	- Validare tip fișier (doar PDF) și generare nume unic bazat pe ID
+	- Frontend Initialization & Setup
+	- Arhitectură și Navigare: Implementat sistemul de rute (App.jsx) pentru paginile Landing, Login, Register și Dashboard
+	- UI/UX Design (Premium Samurai Aesthetic): Creat o identitate vizuală bazată pe Glassmorphism, culori personalizate (samurai-gold) și suport nativ pentru Dark Mode
+	- Dashboard & Funcționalități Guest: Implementat dashboard-ul "The Archive" cu sidebar retractabil și logică de monitorizare a consumului pentru vizitatori (limita de 2 summarizări/zi salvată în localStorage)
+	- Optimizare Responsive
+	- Refactorizare & Debugging
 
-10_feb_2026 (7h)
-	- Full-Stack Integration: Finalizat fluxul complet Frontend-Backend (Upload -> AI Processing -> Database Storage -> UI Render).
-	- Frontend Logic (React): Implementat 'Summon AI Insight' cu state management dinamic (actualizare interfață fără refresh după generare).
-	- Backend Persistence: Implementat salvarea permanentă a rezumatelor în PostgreSQL (evitare costuri repetitive AI).
-	- Database & Docker Architecture: Stabilizat containerul de baze de date (rezolvat crash loops, volume persistence, port conflicts 5432->5435).
-	- API & Data Integrity: Actualizat schema Pydantic (DocumentOut) și sincronizat modelele SQLAlchemy pentru consistența datelor.
-	- UX/UI Polish: Rezolvat randarea condițională a butoanelor și formatarea textului (CSS break-words) pentru titluri lungi.
-	- Debugging Complex: Rezolvat conflicte de drivere (psycopg2), conexiuni Docker și erori de CORS/Network.
+10_feb_2026 (9h)
+	- Full-Stack Integration: Finalizat fluxul complet Frontend-Backend (Upload -> AI Processing -> Database Storage -> UI Render)
+	- Frontend Logic (React): Implementat 'Summon AI Insight' cu state management dinamic (actualizare interfață fără refresh după generare)
+	- Backend Persistence: Implementat salvarea permanentă a rezumatelor în PostgreSQL (evitare costuri repetitive AI)
+	- Database & Docker Architecture: Stabilizat containerul de baze de date (rezolvat crash loops, volume persistence, port conflicts 5432->5435)
+	- API & Data Integrity: Actualizat schema Pydantic (DocumentOut) și sincronizat modelele SQLAlchemy pentru consistența datelor
+	- UX/UI Polish: Rezolvat randarea condițională a butoanelor și formatarea textului (CSS break-words) pentru titluri lungi
+	- Debugging Complex: Rezolvat conflicte de drivere (psycopg2), conexiuni Docker și erori de CORS/Network
+	- Extindere suport formate: adăugare procesare DOCX și TXT pe lângă PDF
 
 15_feb_2026 (1.5h)
-    - Refactorizare cod
-    - Documentare cod Config/Security
+	- Refactorizare cod
+	- Documentare cod Config/Security
 
-17_feb_2026 (6h)
-    - Feature: Colaborare War Room: Implementat sistemul de share pentru grupuri.
-    - Refactorizare UI/UX: Adoptarea unui stil de grile tactice cu carduri pentru a optimiza densitatea informației.
-    - Securitate & RBAC (Role-Based Access Control): Implementat logica de moderator — doar creatorul grupului are permisiunea de a vizualiza și utiliza butonul "Dismantle Room" (verificare realizată prin compararea ID-ului din token-ul JWT cu created_by_id).
-    - Refactorizare Backend.
-    - Serializare Date: Actualizat schemele Pydantic (ActivityOut) pentru a accepta câmpuri opționale (Optional), prevenind erorile de validare.
-    - Finisare UI.
+17_feb_2026 (8h)
+	- Feature: Colaborare War Room: Implementat sistemul de share pentru grupuri
+	- Refactorizare UI/UX: Adoptarea unui stil de grile tactice cu carduri pentru a optimiza densitatea informației
+	- Securitate & RBAC: Implementat logica de moderator — doar creatorul grupului are permisiunea de a vizualiza și utiliza butonul "Dismantle Room" (verificare realizată prin compararea ID-ului din token-ul JWT cu created_by_id)
+	- Refactorizare Backend
+	- Serializare Date: Actualizat schemele Pydantic (ActivityOut) pentru a accepta câmpuri opționale (Optional), prevenind erorile de validare
+	- Implementare sistem de access code unic (5 caractere) pentru invitații în grupuri
+	- Finisare UI + debugging sesiune extinsă
 
-19_feb_2026 (5h)
-	- Feature: Sincronizare Energie & Quota Management: Implementat sistem de monitorizare a consumului (Energy) sincronizat cu backend-ul prin IP-based tracking;
-	- Securitate & Protecție Credite AI: Implementat mecanism de validare a documentului înainte de share; sistemul blochează partajarea scroll-urilor fără sumar generat pentru a preveni risipa de resurse AI.
-	- Grupuri & Collaboration Management: Dezvoltat endpoint de DELETE pentru activitățile din War Room, permițând utilizatorilor să-și retragă documentele partajate (deconectare group_id și ștergere activitate din log).
-	- Frontend Logic & UI Refinement: Adăugat buton de eliminare (Trash icon) vizibil condiționat doar pentru proprietarul documentului și implementat modal de eroare personalizat pentru feedback rapid.
-	- Debugging Full-Stack: Rezolvat erori de serializare
+19_feb_2026 (7h)
+	- Feature: Sincronizare Energie & Quota Management: Implementat sistem de monitorizare a consumului (Energy) sincronizat cu backend-ul prin IP-based tracking
+	- Securitate & Protecție Credite AI: Implementat mecanism de validare a documentului înainte de share; sistemul blochează partajarea scroll-urilor fără sumar generat
+	- Grupuri & Collaboration Management: Dezvoltat endpoint de DELETE pentru activitățile din War Room, permițând utilizatorilor să-și retragă documentele partajate
+	- Frontend Logic & UI Refinement: Adăugat buton de eliminare (Trash icon) vizibil condiționat doar pentru proprietarul documentului și implementat modal de eroare personalizat
+	- Implementare Admin Panel UI: vizualizare utilizatori, ban/unban, documente periculoase
+	- Debugging Full-Stack: Rezolvat erori de serializare și sincronizare stare UI
+
+23_mai_2026 (2h)
+	- Recapitulare proiect după pauza de sesiuni
+	- Revizie arhitectură completă (backend + frontend)
+	- Identificare gaps înainte de prezentare finală: lipsă deployment, lipsă teste automate, lipsă CI/CD
+	- Planificare sprint final: containerizare Docker, pipeline GitHub Actions, hosting cloud Azure
+
+30_mai_2026 (3h)
+	- Research strategii de deployment pentru aplicații FastAPI + React
+	- Studiu Azure services: App Service, Static Web Apps, Container Registry, Blob Storage, PostgreSQL
+	- Planificare migrare file storage de la local (uploads/) la Azure Blob Storage
+	- Proiectare arhitectură CI/CD: test → build → deploy pe fiecare push pe main
+
+31_mai_2026 (7h)
+	- Implementare infrastructură teste automate backend (pytest): 27 teste pentru Auth, Documents, Groups
+	- Setup conftest.py cu SQLite in-memory + StaticPool pentru izolare completă între teste
+	- Mock serviciu AI (Google Gemini) în teste pentru a evita apeluri reale
+	- Implementare teste automate frontend (Vitest + Testing Library): 8 teste
+	- Creare Dockerfile backend (Python 3.12-slim, build-essential pentru psycopg2)
+	- Creare Dockerfile frontend (multi-stage: Node 20 build → Nginx serve)
+	- Creare nginx.conf pentru SPA routing
+	- Actualizare docker-compose.yml pentru full-stack local (db + backend + frontend)
+
+01_iun_2026 (15h)
+	- Implementare storage abstraction layer (storage.py): interfață unificată LocalStorage ↔ AzureBlobStorage cu fallback automat
+	- Migrare document_router.py și document_services.py să folosească storage layer
+	- Creare GitHub Actions CI/CD pipeline: test → build Docker → push ACR → deploy Azure
+	- Setup resurse Azure: Resource Group, PostgreSQL Flexible Server, Storage Account, Container Registry, App Service, Static Web Apps
+	- Configurare GitHub Actions secrets (AZURE_CREDENTIALS, REGISTRY, WEBAPP, etc.)
+	- Debugging pipeline CI/CD (6 rulări): fix psycopg2 build, SQLite threading, jest-dom vitest, mock isolation, pytest invocation, IntegrityError handling
+	- Fix VITE_API_URL: scriere .env.production înainte de build Static Web Apps
+	- Configurare credențiale ACR pe App Service pentru pull imagini Docker
+	- Deployment final confirmat: backend + frontend live pe Azure
